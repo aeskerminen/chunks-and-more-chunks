@@ -125,7 +125,8 @@ SDL_Color pickColor(int val)
     return arrColors[val];
 }
 
-#define PLAYER_SIZE BLOCK_SIZE
+#define PLAYER_WIDTH BLOCK_SIZE
+#define PLAYER_HEIGHT BLOCK_SIZE*2
 
 #define BLOCK_SIZE 40
 #define CHUNK_SIZE 32
@@ -244,9 +245,9 @@ int main(int argc, char* argv[])
             player.velx = -5;
         if(keystate[SDL_SCANCODE_D] == 1)
             player.velx = 5;
-       
+    
+        player.vely = 9.81;
 
-        player.x += player.velx;
 
         // Calculate which chunk the player is on top of and check the nearby blocks for collision
         int chunk_x = floor(player.x / CHUNK_RES);
@@ -257,6 +258,33 @@ int main(int argc, char* argv[])
         // Now we know the chunk position.
         int chunk_index = WORLD_CHUNK_W * chunk_y + chunk_x;
 
+        
+        // Elementary collision check
+        bool player_b_collision = false;
+        SDL_Rect player_b_col {(player.x + PLAYER_WIDTH / 2) - camera.x, (player.y + PLAYER_HEIGHT * 0.95) - camera.y, PLAYER_WIDTH / 5, PLAYER_HEIGHT / 5};
+
+        for(int i = 0; i < CHUNK_SIZE; i++) 
+        {
+            for(int j = 0; j < CHUNK_SIZE; j++) 
+            {
+                SDL_Rect rect {
+                    (i * BLOCK_SIZE + chunks[chunk_index].x_off_w) - camera.x, 
+                    (j * BLOCK_SIZE + chunks[chunk_index].y_off_w) - camera.y, 
+                    BLOCK_SIZE, 
+                    BLOCK_SIZE
+                };
+                if(SDL_HasIntersection(&rect, &player_b_col)) 
+                {
+                    player_b_collision = true;
+                    
+                    i = CHUNK_SIZE;
+                    j = CHUNK_SIZE;
+                }                        
+            }
+        }
+
+
+
         SDL_Rect DEBUG_CHUNK {
             (chunks[chunk_index].x_off_w) - camera.x, 
             (chunks[chunk_index].y_off_w) - camera.y, 
@@ -264,10 +292,11 @@ int main(int argc, char* argv[])
             CHUNK_RES
         };
 
-        player.y += player.vely;
-
+        // Add motion to player
+        if(player_b_collision)
+            player.y += player.vely;
+        player.x += player.velx;
         player.velx = 0;
-        player.vely = 0;
 
 
         // CAMERA
@@ -333,7 +362,7 @@ int main(int argc, char* argv[])
      
         SDL_SetRenderDrawColor(renderer, 255, 5, 255, 255);
 
-        SDL_Rect test {player.x - camera.x, player.y - camera.y, PLAYER_SIZE, PLAYER_SIZE*2};
+        SDL_Rect test {player.x - camera.x, player.y - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
         SDL_RenderFillRect(renderer, &test);
 
         SDL_SetRenderDrawColor(renderer, 50, 50, 200, 255);

@@ -148,10 +148,17 @@ typedef struct player
     int velx, vely;
 } player;
 
+enum Collider {hard, soft, none}; 
+typedef struct tile 
+{
+    char type;
+    Uint32 color;
+    Collider col;
+} tile;
 
 typedef struct chunk 
 {
-    Uint32 arr[CHUNK_SIZE][CHUNK_SIZE];
+    tile arr[CHUNK_SIZE][CHUNK_SIZE];
     int x_off_w;
     int y_off_w;
     bool change;
@@ -196,9 +203,14 @@ std::vector<chunk> generate_world(int w_width, int w_height)
             for(int j = 0; j < CHUNK_SIZE; j++) 
             {
                 if(k >= 32 && k < 40)
-                    c.arr[i][j] = SDL_MapRGBA(formatPix, 0, 0, 0, 255);
-                else
-                    c.arr[i][j] = pixels[(i * (k + 1)) % w_width][(j * (k / w_height))];
+                {
+                    c.arr[i][j].col = Collider::none;
+                    c.arr[i][j].color = SDL_MapRGBA(formatPix, 0, 0, 0, 255);
+                }
+                else {
+                    c.arr[i][j].col = Collider::hard;
+                    c.arr[i][j].color = pixels[(i * (k + 1)) % w_width][(j * (k / w_height))];
+                }
             }
         }
 
@@ -273,7 +285,7 @@ int main(int argc, char* argv[])
                     BLOCK_SIZE, 
                     BLOCK_SIZE
                 };
-                if(SDL_HasIntersection(&rect, &player_b_col)) 
+                if(SDL_HasIntersection(&rect, &player_b_col) && chunks[chunk_index].arr[i][j].col == Collider::hard) 
                 {
                     player_b_collision = true;
                     
@@ -293,7 +305,7 @@ int main(int argc, char* argv[])
         };
 
         // Add motion to player
-        if(player_b_collision)
+        if(!player_b_collision)
             player.y += player.vely;
         player.x += player.velx;
         player.velx = 0;
@@ -336,7 +348,7 @@ int main(int argc, char* argv[])
                 {
                     for(int j = 0; j < CHUNK_SIZE; j++) 
                     {
-                        Uint32 pixel = chunks[k].arr[i][j];
+                        Uint32 pixel = chunks[k].arr[i][j].color;
                         Uint8 r,g,b,a;
                         r = 0; g = 0; b = 0; a = 0;
                         

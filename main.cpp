@@ -269,12 +269,51 @@ int main(int argc, char* argv[])
     
         // Now we know the chunk position.
         int chunk_index = WORLD_CHUNK_W * chunk_y + chunk_x;
+        
+        int block_x_global = floor(player.x / BLOCK_SIZE);
+        int block_y_global = floor(player.y / BLOCK_SIZE);
+        
+        int block_x_local = block_x_global % CHUNK_SIZE;
+        int block_y_local = block_y_global % CHUNK_SIZE;
 
+        int block_y_global_bottom = block_y_global + 2;
+
+        // Get chunk from global block position
+        int block_chunk_index_x = ceil(block_x_global / CHUNK_SIZE);
+        int block_chunk_index_y = ceil(block_y_global_bottom / CHUNK_SIZE);
+        
+
+        
+        SDL_Rect DEBUG_BLOCK 
+        {
+            (block_x_global * BLOCK_SIZE) - camera.x,
+            (block_y_global * BLOCK_SIZE) - camera.y,
+            BLOCK_SIZE,
+            BLOCK_SIZE
+        };
+
+        int block_chunk_index = WORLD_CHUNK_W * block_chunk_index_y + block_chunk_index_x;
         
         // Elementary collision check
         bool player_b_collision = false;
-        SDL_Rect player_b_col {(player.x + PLAYER_WIDTH / 2) - camera.x, (player.y + PLAYER_HEIGHT * 0.95) - camera.y, PLAYER_WIDTH / 5, PLAYER_HEIGHT / 5};
+        SDL_Rect player_b_col {(player.x) - camera.x, (player.y) - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
+        
+        SDL_Rect bottom_rect 
+        {
+            (block_x_global * BLOCK_SIZE) - camera.x,
+            ((block_y_global + 2) * BLOCK_SIZE) - camera.y,
+            BLOCK_SIZE,
+            BLOCK_SIZE
+        };
+        
+        if(SDL_HasIntersection(&bottom_rect, &player_b_col) && 
+                chunks[block_chunk_index].arr[block_x_local][block_y_local].col == Collider::hard) 
+        {
+            player_b_collision = true;
+        }
 
+
+        /*
         for(int i = 0; i < CHUNK_SIZE; i++) 
         {
             for(int j = 0; j < CHUNK_SIZE; j++) 
@@ -291,9 +330,9 @@ int main(int argc, char* argv[])
                     
                     i = CHUNK_SIZE;
                     j = CHUNK_SIZE;
-                }                        
+                }                       
             }
-        }
+        }*/
 
 
 
@@ -304,8 +343,10 @@ int main(int argc, char* argv[])
             CHUNK_RES
         };
 
+        
+
         // Add motion to player
-        if(!player_b_collision)
+        if(!player_b_collision && player.y < WORLD_CHUNK_H * CHUNK_RES)
             player.y += player.vely;
         player.x += player.velx;
         player.velx = 0;
@@ -379,6 +420,8 @@ int main(int argc, char* argv[])
 
         SDL_SetRenderDrawColor(renderer, 50, 50, 200, 255);
         SDL_RenderDrawRect(renderer, &DEBUG_CHUNK);
+        SDL_RenderDrawRect(renderer, &player_b_col);
+        SDL_RenderDrawRect(renderer, &DEBUG_BLOCK);
 
         SDL_RenderPresent(renderer);
         

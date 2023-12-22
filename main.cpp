@@ -241,10 +241,14 @@ int main(int argc, char* argv[])
     {
         Uint64 start = SDL_GetPerformanceCounter();
 
+        bool mouse_left_press = false;
+
         while(SDL_PollEvent(&e)) 
         { 
             if(e.type == SDL_QUIT)    
                 quit = true;
+            if(e.type == SDL_MOUSEBUTTONDOWN)
+                mouse_left_press = true;
         }
 
         const Uint8 *keystate = SDL_GetKeyboardState(NULL);
@@ -265,7 +269,7 @@ int main(int argc, char* argv[])
         int chunk_x = floor(player.x / CHUNK_RES);
         int chunk_y = floor(player.y / CHUNK_RES);
 
-        SDL_Log("%d / %d", chunk_x, chunk_y);    
+        //SDL_Log("%d / %d", chunk_x, chunk_y);    
     
         // Now we know the chunk position.
         int chunk_index = WORLD_CHUNK_W * chunk_y + chunk_x;
@@ -312,30 +316,6 @@ int main(int argc, char* argv[])
             player_b_collision = true;
         }
 
-
-        /*
-        for(int i = 0; i < CHUNK_SIZE; i++) 
-        {
-            for(int j = 0; j < CHUNK_SIZE; j++) 
-            {
-                SDL_Rect rect {
-                    (i * BLOCK_SIZE + chunks[chunk_index].x_off_w) - camera.x, 
-                    (j * BLOCK_SIZE + chunks[chunk_index].y_off_w) - camera.y, 
-                    BLOCK_SIZE, 
-                    BLOCK_SIZE
-                };
-                if(SDL_HasIntersection(&rect, &player_b_col) && chunks[chunk_index].arr[i][j].col == Collider::hard) 
-                {
-                    player_b_collision = true;
-                    
-                    i = CHUNK_SIZE;
-                    j = CHUNK_SIZE;
-                }                       
-            }
-        }*/
-
-
-
         SDL_Rect DEBUG_CHUNK {
             (chunks[chunk_index].x_off_w) - camera.x, 
             (chunks[chunk_index].y_off_w) - camera.y, 
@@ -351,6 +331,47 @@ int main(int argc, char* argv[])
         player.x += player.velx;
         player.velx = 0;
 
+        
+        // REMOVING BLOCK (DEBUG STAGE
+        
+        // Get mouse localtion in world coordinates
+        int mx, my;
+        SDL_GetMouseState(&mx, &my);
+
+        int mx_world = mx + camera.x;
+        int my_world = my + camera.y;
+
+        //SDL_Log("%d / %d", mx_world, my_world);
+
+        SDL_Rect DEBUG_MOUSE 
+        {
+            mx,
+            my,
+            15,
+            15
+        };
+
+
+        // Get block at world coordinates
+        int m_block_global_x = (mx_world / BLOCK_SIZE);
+        int m_block_global_y = (my_world / BLOCK_SIZE);
+
+        int m_block_local_x = m_block_global_x % CHUNK_SIZE;
+        int m_block_local_y = m_block_global_y % CHUNK_SIZE;
+
+        // Get chunk from global block position
+        int m_block_chunk_index_x = ceil(m_block_global_x / CHUNK_SIZE);
+        int m_block_chunk_index_y = ceil(m_block_global_y / CHUNK_SIZE);
+        
+        int m_block_chunk_index = WORLD_CHUNK_W * m_block_chunk_index_y + m_block_chunk_index_x;
+ 
+        if(mouse_left_press) 
+        {
+            chunks[m_block_chunk_index].arr[m_block_local_x][m_block_local_y].col = Collider::none; 
+            chunks[m_block_chunk_index].arr[m_block_local_x][m_block_local_y].color= 0;  
+            mouse_left_press = false;
+        }
+
 
         // CAMERA
         if(keystate[SDL_SCANCODE_LEFT] == 1)
@@ -364,7 +385,8 @@ int main(int argc, char* argv[])
         
         if(camera.x + cam_vel_x >= 0 && camera.x + cam_vel_x <= WORLD_CHUNK_W * CHUNK_SIZE * BLOCK_SIZE)
             camera.x += cam_vel_x;
-        if(camera.y + cam_vel_y <= WORLD_CHUNK_H * CHUNK_SIZE * BLOCK_SIZE - SCREEN_HEIGHT && camera.y + cam_vel_y >= 0)
+        if(camera.y + cam_vel_y <= WORLD_CHUNK_H * CHUNK_SIZE * BLOCK_SIZE - SCREEN_HEIGHT 
+                && camera.y + cam_vel_y >= 0)
             camera.y += cam_vel_y;
 
         SDL_SetRenderDrawColor(renderer, 0,0,0,255);
@@ -422,6 +444,7 @@ int main(int argc, char* argv[])
         SDL_RenderDrawRect(renderer, &DEBUG_CHUNK);
         SDL_RenderDrawRect(renderer, &player_b_col);
         SDL_RenderDrawRect(renderer, &DEBUG_BLOCK);
+        SDL_RenderFillRect(renderer, &DEBUG_MOUSE);
 
         SDL_RenderPresent(renderer);
         

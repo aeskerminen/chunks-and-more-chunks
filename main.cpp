@@ -221,49 +221,9 @@ std::vector<chunk> generate_world(int w_width, int w_height)
     return chunks;
 }
 
-int main(int argc, char* argv[]) 
+void do_player_collision(player player, const std::vector<chunk>& chunks,  bool* collided) 
 {
-    if(!initialize()) 
-        SDL_Quit();
-
-    SDL_Event e; 
-    bool quit = false; 
-   
-    std::vector<chunk> chunks = generate_world(WORLD_CHUNK_W, WORLD_CHUNK_H); 
-    
-    player player;
-    player.x = 4 * CHUNK_RES;
-    player.y = 4 * CHUNK_RES;
-    player.velx = 0;
-    player.vely = 0;
-
-    while(!quit) 
-    {
-        Uint64 start = SDL_GetPerformanceCounter();
-
-        bool mouse_left_press = false;
-
-        while(SDL_PollEvent(&e)) 
-        { 
-            if(e.type == SDL_QUIT)    
-                quit = true;
-            if(e.type == SDL_MOUSEBUTTONDOWN)
-                mouse_left_press = true;
-        }
-
-        const Uint8 *keystate = SDL_GetKeyboardState(NULL);
-
-        cam_vel_x = 0;
-        cam_vel_y = 0;
-
-        // PLAYER
-        if(keystate[SDL_SCANCODE_A] == 1)
-            player.velx = -5;
-        if(keystate[SDL_SCANCODE_D] == 1)
-            player.velx = 5;
-    
-        player.vely = 9.81;
-
+        *collided = false;
 
         // Calculate which chunk the player is on top of and check the nearby blocks for collision
         int chunk_x = floor(player.x / CHUNK_RES);
@@ -287,20 +247,9 @@ int main(int argc, char* argv[])
         int block_chunk_index_x = ceil(block_x_global / CHUNK_SIZE);
         int block_chunk_index_y = ceil(block_y_global_bottom / CHUNK_SIZE);
         
-
-        
-        SDL_Rect DEBUG_BLOCK 
-        {
-            (block_x_global * BLOCK_SIZE) - camera.x,
-            (block_y_global * BLOCK_SIZE) - camera.y,
-            BLOCK_SIZE,
-            BLOCK_SIZE
-        };
-
         int block_chunk_index = WORLD_CHUNK_W * block_chunk_index_y + block_chunk_index_x;
         
         // Elementary collision check
-        bool player_b_collision = false;
         SDL_Rect player_b_col {(player.x) - camera.x, (player.y) - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
         
         SDL_Rect bottom_rect 
@@ -312,23 +261,72 @@ int main(int argc, char* argv[])
         };
         
         if(SDL_HasIntersection(&bottom_rect, &player_b_col) && 
-                chunks[block_chunk_index].arr[block_x_local][block_y_local_bottom].col == Collider::hard) {
-            player_b_collision = true;
-            SDL_Log("%s", "YE");
-        }
-        else 
-        {
-            SDL_Log("%s", "NOOO");
+                chunks[block_chunk_index].arr[block_x_local][block_y_local_bottom].col == Collider::hard)
+            *collided = true;
+}
+
+int main(int argc, char* argv[]) 
+{
+    if(!initialize()) 
+        SDL_Quit();
+
+    SDL_Event e; 
+    bool quit = false; 
+   
+    std::vector<chunk> chunks = generate_world(WORLD_CHUNK_W, WORLD_CHUNK_H); 
+    
+    player player {4 * CHUNK_RES, 4 * CHUNK_RES, 0, 0};
+
+    while(!quit) 
+    {
+        Uint64 start = SDL_GetPerformanceCounter();
+
+        bool mouse_left_press = false;
+
+        while(SDL_PollEvent(&e)) 
+        { 
+            if(e.type == SDL_QUIT)    
+                quit = true;
+            if(e.type == SDL_MOUSEBUTTONDOWN)
+                mouse_left_press = true;
         }
 
-        SDL_Rect DEBUG_CHUNK {
+        const Uint8 *keystate = SDL_GetKeyboardState(NULL);
+
+        cam_vel_x = 0;
+        cam_vel_y = 0;
+
+        bool player_b_collision;
+        do_player_collision(player, chunks, &player_b_collision);
+
+        // PLAYER
+        if(keystate[SDL_SCANCODE_A] == 1)
+            player.velx = -5;
+        if(keystate[SDL_SCANCODE_D] == 1)
+            player.velx = 5;
+    
+        player.vely = 9.81;
+
+
+       
+
+       /* 
+        SDL_Rect DEBUG_BLOCK 
+        {
+            (block_x_global * BLOCK_SIZE) - camera.x,
+            (block_y_global * BLOCK_SIZE) - camera.y,
+            BLOCK_SIZE,
+            BLOCK_SIZE
+        };
+
+               SDL_Rect DEBUG_CHUNK {
             (chunks[chunk_index].x_off_w) - camera.x, 
             (chunks[chunk_index].y_off_w) - camera.y, 
             CHUNK_RES, 
             CHUNK_RES
         };
 
-        
+        */
 
         // Add motion to player
         if(!player_b_collision)
@@ -447,12 +445,14 @@ int main(int argc, char* argv[])
         SDL_Rect test {player.x - camera.x, player.y - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
         SDL_RenderFillRect(renderer, &test);
 
+        /*
         SDL_SetRenderDrawColor(renderer, 50, 50, 200, 255);
         SDL_RenderDrawRect(renderer, &DEBUG_CHUNK);
         SDL_RenderDrawRect(renderer, &player_b_col);
         SDL_RenderDrawRect(renderer, &DEBUG_BLOCK);
         SDL_RenderFillRect(renderer, &DEBUG_MOUSE);
         SDL_RenderDrawRect(renderer, &bottom_rect);
+        */
 
         SDL_RenderPresent(renderer);
         

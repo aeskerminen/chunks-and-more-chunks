@@ -281,6 +281,7 @@ int main(int argc, char* argv[])
         int block_y_local = block_y_global % CHUNK_SIZE;
 
         int block_y_global_bottom = block_y_global + 2;
+        int block_y_local_bottom = block_y_global_bottom % CHUNK_SIZE;
 
         // Get chunk from global block position
         int block_chunk_index_x = ceil(block_x_global / CHUNK_SIZE);
@@ -311,9 +312,13 @@ int main(int argc, char* argv[])
         };
         
         if(SDL_HasIntersection(&bottom_rect, &player_b_col) && 
-                chunks[block_chunk_index].arr[block_x_local][block_y_local].col == Collider::hard) 
-        {
+                chunks[block_chunk_index].arr[block_x_local][block_y_local_bottom].col == Collider::hard) {
             player_b_collision = true;
+            SDL_Log("%s", "YE");
+        }
+        else 
+        {
+            SDL_Log("%s", "NOOO");
         }
 
         SDL_Rect DEBUG_CHUNK {
@@ -326,7 +331,7 @@ int main(int argc, char* argv[])
         
 
         // Add motion to player
-        if(!player_b_collision && player.y < WORLD_CHUNK_H * CHUNK_RES)
+        if(!player_b_collision)
             player.y += player.vely;
         player.x += player.velx;
         player.velx = 0;
@@ -447,6 +452,7 @@ int main(int argc, char* argv[])
         SDL_RenderDrawRect(renderer, &player_b_col);
         SDL_RenderDrawRect(renderer, &DEBUG_BLOCK);
         SDL_RenderFillRect(renderer, &DEBUG_MOUSE);
+        SDL_RenderDrawRect(renderer, &bottom_rect);
 
         SDL_RenderPresent(renderer);
         

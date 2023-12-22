@@ -363,8 +363,10 @@ int main(int argc, char* argv[])
         int m_block_chunk_index_x = ceil(m_block_global_x / CHUNK_SIZE);
         int m_block_chunk_index_y = ceil(m_block_global_y / CHUNK_SIZE);
         
+        // Get actual index
         int m_block_chunk_index = WORLD_CHUNK_W * m_block_chunk_index_y + m_block_chunk_index_x;
- 
+
+        // Remove block
         if(mouse_left_press) 
         {
             chunks[m_block_chunk_index].arr[m_block_local_x][m_block_local_y].col = Collider::none; 

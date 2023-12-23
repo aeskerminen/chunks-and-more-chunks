@@ -234,20 +234,6 @@ void do_player_collision(player player, const std::vector<chunk>& chunks,  bool*
         int block_x_global = floor(player.x / BLOCK_SIZE);
         int block_y_global = floor(player.y / BLOCK_SIZE);
         
-        int block_y_global_bottom = block_y_global + 2;
-
-        // Get chunk from global block position
-        int block_chunk_index_x = ceil(block_x_global / CHUNK_SIZE);
-        int block_chunk_index_y = ceil(block_y_global_bottom / CHUNK_SIZE);
-        
-        // CHUNK INDEX
-        int block_chunk_index = WORLD_CHUNK_W * block_chunk_index_y + block_chunk_index_x;
-       
-        // LOCAL BLOCKS FOR BOTTOM
-        int block_x_local = block_x_global % CHUNK_SIZE;
-        int block_y_local_bottom = block_y_global_bottom % CHUNK_SIZE;
-
-
         // BOTTOM COLLISION
         
         SDL_Point local_bottom_points[3] = 

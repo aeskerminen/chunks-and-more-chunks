@@ -223,7 +223,7 @@ std::vector<chunk> generate_world(int w_width, int w_height)
 
 void do_player_collision(player player, const std::vector<chunk>& chunks,  bool* col_b, bool* col_l, bool* col_r) 
 {
-        *col_b= false;
+        *col_b = false;
         *col_l = false;
         *col_r = false;
         
@@ -234,51 +234,121 @@ void do_player_collision(player player, const std::vector<chunk>& chunks,  bool*
         int block_x_global = floor(player.x / BLOCK_SIZE);
         int block_y_global = floor(player.y / BLOCK_SIZE);
         
-        // BOTTOM COLLISION
-        
-        SDL_Point local_bottom_points[3] = 
+        // BOTTOM COLLISION        
         {
-            {block_x_global % CHUNK_SIZE, (block_y_global + 2) % CHUNK_SIZE},
-            {(block_x_global + 1) % CHUNK_SIZE, (block_y_global + 2) % CHUNK_SIZE},
-            {(block_x_global - 1) % CHUNK_SIZE, (block_y_global + 2) % CHUNK_SIZE}
-        };
 
-        int bottom_chunks[3] = 
-        {
-            WORLD_CHUNK_W * ceil((block_y_global + 2) / CHUNK_SIZE) + ceil(block_x_global / CHUNK_SIZE),
-            WORLD_CHUNK_W * ceil((block_y_global + 2) / CHUNK_SIZE) + ceil((block_x_global + 1) / CHUNK_SIZE),
-            WORLD_CHUNK_W * ceil((block_y_global + 2) / CHUNK_SIZE) + ceil((block_x_global - 1) / CHUNK_SIZE) 
-        };
-        
-        SDL_Rect bottom_colliders[3] = 
-        {
+            SDL_Point local_points[3] = 
             {
-                 (block_x_global * BLOCK_SIZE) - camera.x,
-                ((block_y_global + 2) * BLOCK_SIZE) - camera.y,
-                BLOCK_SIZE,
-                BLOCK_SIZE
-            },
-            {
-                ((block_x_global + 1) * BLOCK_SIZE) - camera.x,
-                ((block_y_global + 2) * BLOCK_SIZE) - camera.y,
-                BLOCK_SIZE,
-                BLOCK_SIZE
-            },
-            {
-                ((block_x_global - 1) * BLOCK_SIZE) - camera.x,
-                ((block_y_global + 2) * BLOCK_SIZE) - camera.y,
-                BLOCK_SIZE,
-                BLOCK_SIZE
-            },
-        };
+                {block_x_global % CHUNK_SIZE, (block_y_global + 2) % CHUNK_SIZE},
+                {(block_x_global + 1) % CHUNK_SIZE, (block_y_global + 2) % CHUNK_SIZE},
+                {(block_x_global - 1) % CHUNK_SIZE, (block_y_global + 2) % CHUNK_SIZE}
+            };
 
-        for(int i = 0; i < 3; i++) 
+            int target_chunks[3] = 
+            {
+                WORLD_CHUNK_W * ceil((block_y_global + 2) / CHUNK_SIZE) + ceil(block_x_global / CHUNK_SIZE),
+                WORLD_CHUNK_W * ceil((block_y_global + 2) / CHUNK_SIZE) + ceil((block_x_global + 1) / CHUNK_SIZE),
+                WORLD_CHUNK_W * ceil((block_y_global + 2) / CHUNK_SIZE) + ceil((block_x_global - 1) / CHUNK_SIZE) 
+            };
+            
+            SDL_Rect target_colliders[3] = 
+            {
+                {
+                     (block_x_global * BLOCK_SIZE) - camera.x,
+                    ((block_y_global + 2) * BLOCK_SIZE) - camera.y,
+                    BLOCK_SIZE,
+                    BLOCK_SIZE
+                },
+                {
+                    ((block_x_global + 1) * BLOCK_SIZE) - camera.x,
+                    ((block_y_global + 2) * BLOCK_SIZE) - camera.y,
+                    BLOCK_SIZE,
+                    BLOCK_SIZE
+                },
+                {
+                    ((block_x_global - 1) * BLOCK_SIZE) - camera.x,
+                    ((block_y_global + 2) * BLOCK_SIZE) - camera.y,
+                    BLOCK_SIZE,
+                    BLOCK_SIZE
+                },
+            };
+
+            for(int i = 0; i < 3; i++) 
+            {
+                if(SDL_HasIntersection(&target_colliders[i], &player_col) && 
+                    chunks[target_chunks[i]].arr[local_points[i].x][local_points[i].y].col 
+                    == Collider::hard)
+                    *col_b = true;
+            }  
+
+        }
+
+        // LEFT & RIGHT COLLISION
         {
-            if(SDL_HasIntersection(&bottom_colliders[i], &player_col) && 
-                chunks[bottom_chunks[i]].arr[local_bottom_points[i].x][local_bottom_points[i].y].col 
-                == Collider::hard)
-                *col_b = true;
-        }  
+
+            SDL_Point local_points[4] = 
+            {
+                {(block_x_global - 1) % CHUNK_SIZE, (block_y_global) % CHUNK_SIZE},
+                {(block_x_global - 1) % CHUNK_SIZE, (block_y_global + 1) % CHUNK_SIZE},
+                {(block_x_global + 1) % CHUNK_SIZE, (block_y_global) % CHUNK_SIZE},
+                {(block_x_global + 1) % CHUNK_SIZE, (block_y_global + 1) % CHUNK_SIZE}
+            };
+
+            int target_chunks[4] = 
+            {
+                WORLD_CHUNK_W * ceil((block_y_global) / CHUNK_SIZE) + ceil((block_x_global - 1) / CHUNK_SIZE),
+                WORLD_CHUNK_W * ceil((block_y_global + 1) / CHUNK_SIZE) + ceil((block_x_global - 1) / CHUNK_SIZE),
+                WORLD_CHUNK_W * ceil((block_y_global) / CHUNK_SIZE) + ceil((block_x_global + 1) / CHUNK_SIZE),
+                WORLD_CHUNK_W * ceil((block_y_global + 1) / CHUNK_SIZE) + ceil((block_x_global + 1) / CHUNK_SIZE),
+            
+            };
+            
+            SDL_Rect target_colliders[4] = 
+            {
+                {
+                    ((block_x_global - 1) * BLOCK_SIZE) - camera.x,
+                    ((block_y_global) * BLOCK_SIZE) - camera.y,
+                    BLOCK_SIZE * 1.025,
+                    BLOCK_SIZE
+                },
+                {
+                    ((block_x_global - 1) * BLOCK_SIZE) - camera.x,
+                    ((block_y_global + 1) * BLOCK_SIZE) - camera.y,
+                    BLOCK_SIZE * 1.025,
+                    BLOCK_SIZE
+                },
+                {
+                    ((block_x_global + 1) * BLOCK_SIZE) - camera.x,
+                    ((block_y_global) * BLOCK_SIZE) - camera.y,
+                    BLOCK_SIZE * 1.025,
+                    BLOCK_SIZE
+                },
+                {
+                    ((block_x_global + 1) * BLOCK_SIZE) - camera.x,
+                    ((block_y_global + 1) * BLOCK_SIZE) - camera.y,
+                    BLOCK_SIZE * 1.025,
+                    BLOCK_SIZE
+                }
+            };
+
+
+            SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);
+            for(int i = 0; i < 4; i++) 
+            {
+                if(SDL_HasIntersection(&target_colliders[i], &player_col) && 
+                    chunks[target_chunks[i]].arr[local_points[i].x][local_points[i].y].col 
+                    == Collider::hard) 
+                { 
+                    if(i < 2)
+                        *col_l = true;
+                    else
+                        *col_r = true;
+                }
+
+                SDL_RenderDrawRect(renderer, &target_colliders[i]);
+            }
+
+        }
 }
 
 int main(int argc, char* argv[]) 
@@ -307,6 +377,61 @@ int main(int argc, char* argv[])
                 mouse_left_press = true;
         }
 
+        // RENDER
+
+        SDL_PixelFormat* pixel_format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888);
+        
+        SDL_SetRenderDrawColor(renderer, 0,0,0,255);
+        SDL_RenderClear(renderer);
+        
+        for(int k = 0; k < chunks.size(); k++) 
+        { 
+            SDL_Rect chunkrect {
+                chunks[k].x_off_w, 
+                chunks[k].y_off_w, 
+                CHUNK_SIZE * BLOCK_SIZE * 0.95, 
+                CHUNK_SIZE * BLOCK_SIZE * 0.95
+            };
+
+            SDL_Rect inter;
+
+            if(SDL_HasIntersection(&chunkrect, &camera))
+            { 
+                for(int i = 0; i < CHUNK_SIZE; i++) 
+                {
+                    for(int j = 0; j < CHUNK_SIZE; j++) 
+                    {
+                        Uint32 pixel = chunks[k].arr[i][j].color;
+                        Uint8 r,g,b,a;
+                        r = 0; g = 0; b = 0; a = 0;
+                        
+                        SDL_GetRGBA(pixel, pixel_format, &r, &g, &b, &a);
+
+                        SDL_SetRenderDrawColor(renderer, r, g,b, a);
+                        SDL_Rect rect {
+                            (i * BLOCK_SIZE + chunks[k].x_off_w) - camera.x, 
+                            (j * BLOCK_SIZE + chunks[k].y_off_w) - camera.y, 
+                            BLOCK_SIZE, 
+                            BLOCK_SIZE
+                        };
+                                
+                        SDL_RenderFillRect(renderer, &rect);
+
+                        // DEBUG
+                        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+                        SDL_RenderDrawRect(renderer, &rect);
+                    }
+                }
+            }
+        }
+     
+        SDL_SetRenderDrawColor(renderer, 255, 5, 255, 255);
+
+        SDL_Rect test {player.x - camera.x, player.y - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
+        SDL_RenderFillRect(renderer, &test);
+
+
+        // LOGIC
         const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 
         cam_vel_x = 0;
@@ -413,58 +538,8 @@ int main(int argc, char* argv[])
                 && camera.y + cam_vel_y >= 0)
             camera.y += cam_vel_y;
 
-        SDL_SetRenderDrawColor(renderer, 0,0,0,255);
-        SDL_RenderClear(renderer);
 
-        SDL_PixelFormat* pixel_format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888);
-
-        for(int k = 0; k < chunks.size(); k++) 
-        { 
-            SDL_Rect chunkrect {
-                chunks[k].x_off_w, 
-                chunks[k].y_off_w, 
-                CHUNK_SIZE * BLOCK_SIZE * 0.95, 
-                CHUNK_SIZE * BLOCK_SIZE * 0.95
-            };
-
-            SDL_Rect inter;
-
-            if(SDL_HasIntersection(&chunkrect, &camera))
-            { 
-                for(int i = 0; i < CHUNK_SIZE; i++) 
-                {
-                    for(int j = 0; j < CHUNK_SIZE; j++) 
-                    {
-                        Uint32 pixel = chunks[k].arr[i][j].color;
-                        Uint8 r,g,b,a;
-                        r = 0; g = 0; b = 0; a = 0;
-                        
-                        SDL_GetRGBA(pixel, pixel_format, &r, &g, &b, &a);
-
-                        SDL_SetRenderDrawColor(renderer, r, g,b, a);
-                        SDL_Rect rect {
-                            (i * BLOCK_SIZE + chunks[k].x_off_w) - camera.x, 
-                            (j * BLOCK_SIZE + chunks[k].y_off_w) - camera.y, 
-                            BLOCK_SIZE, 
-                            BLOCK_SIZE
-                        };
-                                
-                        SDL_RenderFillRect(renderer, &rect);
-
-                        // DEBUG
-                        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-                        SDL_RenderDrawRect(renderer, &rect);
-                    }
-                }
-            }
-        }
-     
-        SDL_SetRenderDrawColor(renderer, 255, 5, 255, 255);
-
-        SDL_Rect test {player.x - camera.x, player.y - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
-        SDL_RenderFillRect(renderer, &test);
-
-        /*
+                /*
         SDL_SetRenderDrawColor(renderer, 50, 50, 200, 255);
         SDL_RenderDrawRect(renderer, &DEBUG_CHUNK);
         SDL_RenderDrawRect(renderer, &player_b_col);

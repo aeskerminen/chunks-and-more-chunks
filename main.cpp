@@ -221,48 +221,78 @@ std::vector<chunk> generate_world(int w_width, int w_height)
     return chunks;
 }
 
-void do_player_collision(player player, const std::vector<chunk>& chunks,  bool* collided) 
+void do_player_collision(player player, const std::vector<chunk>& chunks,  bool* col_b, bool* col_l, bool* col_r) 
 {
-        *collided = false;
-
-        // Calculate which chunk the player is on top of and check the nearby blocks for collision
-        int chunk_x = floor(player.x / CHUNK_RES);
-        int chunk_y = floor(player.y / CHUNK_RES);
-
-        //SDL_Log("%d / %d", chunk_x, chunk_y);    
-    
-        // Now we know the chunk position.
-        int chunk_index = WORLD_CHUNK_W * chunk_y + chunk_x;
+        *col_b= false;
+        *col_l = false;
+        *col_r = false;
         
+        // PLAYER COLLIDER
+        SDL_Rect player_col {(player.x) - camera.x, (player.y) - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
+        
+        // THE BLOCK ON WHICH THE PLAYERS HEAD IS ON
         int block_x_global = floor(player.x / BLOCK_SIZE);
         int block_y_global = floor(player.y / BLOCK_SIZE);
         
-        int block_x_local = block_x_global % CHUNK_SIZE;
-        int block_y_local = block_y_global % CHUNK_SIZE;
-
         int block_y_global_bottom = block_y_global + 2;
-        int block_y_local_bottom = block_y_global_bottom % CHUNK_SIZE;
 
         // Get chunk from global block position
         int block_chunk_index_x = ceil(block_x_global / CHUNK_SIZE);
         int block_chunk_index_y = ceil(block_y_global_bottom / CHUNK_SIZE);
         
+        // CHUNK INDEX
         int block_chunk_index = WORLD_CHUNK_W * block_chunk_index_y + block_chunk_index_x;
+       
+        // LOCAL BLOCKS FOR BOTTOM
+        int block_x_local = block_x_global % CHUNK_SIZE;
+        int block_y_local_bottom = block_y_global_bottom % CHUNK_SIZE;
+
+
+        // BOTTOM COLLISION
         
-        // Elementary collision check
-        SDL_Rect player_b_col {(player.x) - camera.x, (player.y) - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
-        
-        SDL_Rect bottom_rect 
+        SDL_Point local_bottom_points[3] = 
         {
-            (block_x_global * BLOCK_SIZE) - camera.x,
-            ((block_y_global + 2) * BLOCK_SIZE) - camera.y,
-            BLOCK_SIZE,
-            BLOCK_SIZE
+            {block_x_global % CHUNK_SIZE, (block_y_global + 2) % CHUNK_SIZE},
+            {(block_x_global + 1) % CHUNK_SIZE, (block_y_global + 2) % CHUNK_SIZE},
+            {(block_x_global - 1) % CHUNK_SIZE, (block_y_global + 2) % CHUNK_SIZE}
+        };
+
+        int bottom_chunks[3] = 
+        {
+            WORLD_CHUNK_W * ceil((block_y_global + 2) / CHUNK_SIZE) + ceil(block_x_global / CHUNK_SIZE),
+            WORLD_CHUNK_W * ceil((block_y_global + 2) / CHUNK_SIZE) + ceil((block_x_global + 1) / CHUNK_SIZE),
+            WORLD_CHUNK_W * ceil((block_y_global + 2) / CHUNK_SIZE) + ceil((block_x_global - 1) / CHUNK_SIZE) 
         };
         
-        if(SDL_HasIntersection(&bottom_rect, &player_b_col) && 
-                chunks[block_chunk_index].arr[block_x_local][block_y_local_bottom].col == Collider::hard)
-            *collided = true;
+        SDL_Rect bottom_colliders[3] = 
+        {
+            {
+                 (block_x_global * BLOCK_SIZE) - camera.x,
+                ((block_y_global + 2) * BLOCK_SIZE) - camera.y,
+                BLOCK_SIZE,
+                BLOCK_SIZE
+            },
+            {
+                ((block_x_global + 1) * BLOCK_SIZE) - camera.x,
+                ((block_y_global + 2) * BLOCK_SIZE) - camera.y,
+                BLOCK_SIZE,
+                BLOCK_SIZE
+            },
+            {
+                ((block_x_global - 1) * BLOCK_SIZE) - camera.x,
+                ((block_y_global + 2) * BLOCK_SIZE) - camera.y,
+                BLOCK_SIZE,
+                BLOCK_SIZE
+            },
+        };
+
+        for(int i = 0; i < 3; i++) 
+        {
+            if(SDL_HasIntersection(&bottom_colliders[i], &player_col) && 
+                chunks[bottom_chunks[i]].arr[local_bottom_points[i].x][local_bottom_points[i].y].col 
+                == Collider::hard)
+                *col_b = true;
+        }  
 }
 
 int main(int argc, char* argv[]) 
@@ -296,8 +326,8 @@ int main(int argc, char* argv[])
         cam_vel_x = 0;
         cam_vel_y = 0;
 
-        bool player_b_collision;
-        do_player_collision(player, chunks, &player_b_collision);
+        bool player_b_col, player_l_col, player_r_col;
+        do_player_collision(player, chunks, &player_b_col, &player_l_col, &player_r_col);
 
         // PLAYER
         if(keystate[SDL_SCANCODE_A] == 1)
@@ -307,6 +337,15 @@ int main(int argc, char* argv[])
     
         player.vely = 9.81;
 
+        // Add motion to player
+        if(!player_b_col)
+            player.y += player.vely;
+        if(!player_l_col && player.velx < 0)
+            player.x += player.velx;
+        if(!player_r_col && player.velx > 0)
+            player.x += player.velx;
+
+        player.velx = 0;
 
        
 
@@ -327,12 +366,6 @@ int main(int argc, char* argv[])
         };
 
         */
-
-        // Add motion to player
-        if(!player_b_collision)
-            player.y += player.vely;
-        player.x += player.velx;
-        player.velx = 0;
 
         
         // REMOVING BLOCK (DEBUG STAGE

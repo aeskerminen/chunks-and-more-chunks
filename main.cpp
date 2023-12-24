@@ -50,14 +50,14 @@ constexpr int CHUNK_RES = BLOCK_SIZE * CHUNK_SIZE;
 constexpr int WOLRD_RES = WORLD_CHUNK_W * WORLD_CHUNK_H * CHUNK_RES * CHUNK_RES;
 
 // DEBUG LOCATION
-SDL_Rect camera {4 * CHUNK_RES, 4 * CHUNK_RES, SCREEN_WIDTH, SCREEN_HEIGHT};
+SDL_FRect camera {4 * CHUNK_RES, 4 * CHUNK_RES, SCREEN_WIDTH, SCREEN_HEIGHT};
 float cam_vel_x = 0;
 float cam_vel_y = 0;
 
 typedef struct player 
 {
-    int x, y;
-    int velx, vely;
+    float x, y;
+    float velx, vely;
 } player;
 
 enum Collider {hard, soft, none}; 
@@ -117,7 +117,7 @@ void do_player_collision(player player, const std::vector<chunk>& chunks,  bool*
         *col_r = false;
         
         // PLAYER COLLIDER
-        SDL_Rect player_col {(player.x) - camera.x, (player.y) - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
+        SDL_FRect player_col {(player.x) - camera.x, (player.y) - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
         
         // THE BLOCK ON WHICH THE PLAYERS HEAD IS ON
         int block_x_global = floor(player.x / BLOCK_SIZE);
@@ -140,7 +140,7 @@ void do_player_collision(player player, const std::vector<chunk>& chunks,  bool*
                 WORLD_CHUNK_W * ceil((block_y_global + 2) / CHUNK_SIZE) + ceil((block_x_global - 1) / CHUNK_SIZE) 
             };
             
-            SDL_Rect target_colliders[3] = 
+            SDL_FRect target_colliders[3] = 
             {
                 {
                      (block_x_global * BLOCK_SIZE) - camera.x,
@@ -164,7 +164,7 @@ void do_player_collision(player player, const std::vector<chunk>& chunks,  bool*
 
             for(int i = 0; i < 3; i++) 
             {
-                if(SDL_HasIntersection(&target_colliders[i], &player_col) && 
+                if(SDL_HasIntersectionF(&target_colliders[i], &player_col) && 
                     chunks[target_chunks[i]].arr[local_points[i].x][local_points[i].y].col 
                     == Collider::hard)
                     *col_b = true;
@@ -192,7 +192,7 @@ void do_player_collision(player player, const std::vector<chunk>& chunks,  bool*
             
             };
             
-            SDL_Rect target_colliders[4] = 
+            SDL_FRect target_colliders[4] = 
             {
                 {
                     ((block_x_global - 1) * BLOCK_SIZE) - camera.x,
@@ -224,7 +224,7 @@ void do_player_collision(player player, const std::vector<chunk>& chunks,  bool*
             SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);
             for(int i = 0; i < 4; i++) 
             {
-                if(SDL_HasIntersection(&target_colliders[i], &player_col) && 
+                if(SDL_HasIntersectionF(&target_colliders[i], &player_col) && 
                     chunks[target_chunks[i]].arr[local_points[i].x][local_points[i].y].col 
                     == Collider::hard) 
                 { 
@@ -234,7 +234,7 @@ void do_player_collision(player player, const std::vector<chunk>& chunks,  bool*
                         *col_r = true;
                 }
 
-                SDL_RenderDrawRect(renderer, &target_colliders[i]);
+                SDL_RenderDrawRectF(renderer, &target_colliders[i]);
             }
 
         }
@@ -252,10 +252,10 @@ int main(int argc, char* argv[])
     
     player player {4 * CHUNK_RES, 4 * CHUNK_RES, 0, 0};
 
+    Uint32 lastFrame = SDL_GetTicks();
+
     while(!quit) 
     {
-        Uint64 start = SDL_GetPerformanceCounter();
-
         bool mouse_left_press = false;
 
         while(SDL_PollEvent(&e)) 
@@ -266,6 +266,13 @@ int main(int argc, char* argv[])
                 mouse_left_press = true;
         }
 
+        Uint32 curFrame = SDL_GetTicks();
+        
+        Uint32 difference = curFrame - lastFrame;
+		float dt = difference / 25.0f;
+
+		lastFrame = curFrame;
+
         // RENDER
 
         SDL_PixelFormat* pixel_format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888);
@@ -275,7 +282,7 @@ int main(int argc, char* argv[])
         
         for(int k = 0; k < chunks.size(); k++) 
         { 
-            SDL_Rect chunkrect {
+            SDL_FRect chunkrect {
                 chunks[k].x_off_w, 
                 chunks[k].y_off_w, 
                 CHUNK_SIZE * BLOCK_SIZE * 0.95, 
@@ -284,7 +291,7 @@ int main(int argc, char* argv[])
 
             SDL_Rect inter;
 
-            if(SDL_HasIntersection(&chunkrect, &camera))
+            if(SDL_HasIntersectionF(&chunkrect, &camera))
             { 
                 for(int i = 0; i < CHUNK_SIZE; i++) 
                 {
@@ -331,19 +338,19 @@ int main(int argc, char* argv[])
 
         // PLAYER
         if(keystate[SDL_SCANCODE_A] == 1)
-            player.velx = -5;
+            player.velx = -20;
         if(keystate[SDL_SCANCODE_D] == 1)
-            player.velx = 5;
+            player.velx = 20;
     
         player.vely = 9.81;
 
         // Add motion to player
         if(!player_b_col)
-            player.y += player.vely;
+            player.y += player.vely * dt;
         if(!player_l_col && player.velx < 0)
-            player.x += player.velx;
+            player.x += player.velx * dt;
         if(!player_r_col && player.velx > 0)
-            player.x += player.velx;
+            player.x += player.velx * dt;
 
         player.velx = 0;
         
@@ -392,13 +399,13 @@ int main(int argc, char* argv[])
 
         // CAMERA
         if(keystate[SDL_SCANCODE_LEFT] == 1)
-            cam_vel_x = -25;
+            cam_vel_x = -25 * dt;
         if(keystate[SDL_SCANCODE_RIGHT] == 1)
-            cam_vel_x = 25;
+            cam_vel_x = 25 * dt;
         if(keystate[SDL_SCANCODE_UP] == 1)
-            cam_vel_y = -25;
+            cam_vel_y = -25 * dt;
         if(keystate[SDL_SCANCODE_DOWN] == 1)
-            cam_vel_y = 25;
+            cam_vel_y = 25 * dt;
         
         if(camera.x + cam_vel_x >= 0 && camera.x + cam_vel_x <= WORLD_CHUNK_W * CHUNK_SIZE * BLOCK_SIZE)
             camera.x += cam_vel_x;
@@ -408,10 +415,6 @@ int main(int argc, char* argv[])
 
         SDL_RenderPresent(renderer);
         
-        Uint64 end = SDL_GetPerformanceCounter();
-
-        float elapsedMS = (end - start) / (float)SDL_GetPerformanceFrequency() * 1000.0f;
-	    SDL_Delay(floor(16.666f - elapsedMS));
     }
 
 

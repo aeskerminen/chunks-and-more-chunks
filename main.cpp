@@ -54,6 +54,7 @@ SDL_FRect camera {4 * CHUNK_RES, 4 * CHUNK_RES, SCREEN_WIDTH, SCREEN_HEIGHT};
 float cam_vel_x = 0;
 float cam_vel_y = 0;
 
+#define JUMP_FORCE 50
 typedef struct player 
 {
     float x, y;
@@ -251,8 +252,12 @@ int main(int argc, char* argv[])
     std::vector<chunk> chunks = generate_world(WORLD_CHUNK_W, WORLD_CHUNK_H); 
     
     player player {4 * CHUNK_RES, 4 * CHUNK_RES, 0, 0};
+    bool jump = false;
+
 
     Uint32 lastFrame = SDL_GetTicks();
+
+    int GRAVITY = 9.81;
 
     while(!quit) 
     {
@@ -337,16 +342,32 @@ int main(int argc, char* argv[])
         do_player_collision(player, chunks, &player_b_col, &player_l_col, &player_r_col);
 
         // PLAYER
+        player.vely = 9.81;
+        
         if(keystate[SDL_SCANCODE_A] == 1)
             player.velx = -20;
         if(keystate[SDL_SCANCODE_D] == 1)
             player.velx = 20;
-    
-        player.vely = 9.81;
+        if(keystate[SDL_SCANCODE_S] == 1 && player_b_col && !jump) 
+        {
+            player.vely -= JUMP_FORCE * 1500 * dt;
+            jump = true;
+        }
+        else if (keystate[SDL_SCANCODE_S] == 0) { jump = false; }
+
+        if(player_b_col)
+            GRAVITY = 0;
+        else
+            GRAVITY = 9.81;
+
+        player.vely += GRAVITY * dt;
 
         // Add motion to player
         if(!player_b_col)
             player.y += player.vely * dt;
+        else if(player_b_col && player.vely < 0)
+            player.y += player.vely * dt;
+
         if(!player_l_col && player.velx < 0)
             player.x += player.velx * dt;
         if(!player_r_col && player.velx > 0)

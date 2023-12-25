@@ -114,7 +114,18 @@ std::vector<chunk> generate_world(int w_width, int w_height)
         for(int x = 0; x < noise_w; x++) 
         {
             int cindex = WORLD_CHUNK_W * ceil(y / CHUNK_SIZE) + ceil(x / CHUNK_SIZE);
-            chunks[cindex].arr[x % 32][y % 32].color = textureBuffer[x][y];   
+            tile* curtile = &chunks[cindex].arr[x % 32][y % 32];
+
+            Uint8 r, g, b, a;
+            SDL_GetRGBA(textureBuffer[x][y], formatPix, &r, &g, &b, &a);
+            Uint8 luminance = (0.2126*r + 0.7152*g + 0.0722*b);
+
+            curtile->color = textureBuffer[x][y];
+
+            if(luminance > (255 / 2))
+                curtile->col = Collider::hard;
+            else
+                curtile->col = Collider::none;
         }
     }
  
@@ -323,7 +334,8 @@ int main(int argc, char* argv[])
                         if(luminance > (255 / 2))
                             SDL_SetRenderDrawColor(renderer, r, g,b, a);
                         else
-                            SDL_SetRenderDrawColor(renderer, r,g,b, a);
+                            SDL_SetRenderDrawColor(renderer, 0, 0, 0, a);
+
                         SDL_Rect rect {
                             (i * BLOCK_SIZE + chunks[k].x_off_w) - camera.x, 
                             (j * BLOCK_SIZE + chunks[k].y_off_w) - camera.y, 

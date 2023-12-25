@@ -79,35 +79,45 @@ typedef struct chunk
 
 std::vector<chunk> generate_world(int w_width, int w_height) 
 {
+    auto noise = IMG_Load("./samplenoise.png");
+    Uint32* pixels = (Uint32*)noise->pixels;
+
+    size_t noise_w = noise->w;
+    size_t noise_h = noise->h;
+
+    Uint32** textureBuffer = (Uint32**)malloc(noise_h * sizeof(Uint32*));
+    for (int i = 0; i < noise_h; i++)
+        textureBuffer[i] = (Uint32*)malloc(noise_w * sizeof(Uint32));
+
+    for(int y = 0; y < noise_h; y++)
+        for(int x = 0; x < noise_w; x++)
+            textureBuffer[x][y] = pixels[noise_w * y + x];
+
     SDL_PixelFormat *formatPix = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888);    
     std::vector<chunk> chunks;
 
+    int height = 0;
     for(int k = 0; k < w_width * w_height; k++) 
     {
         chunk c;
-        c.x_off_w = CHUNK_SIZE * BLOCK_SIZE * (k % w_width);
-        c.y_off_w = CHUNK_SIZE * BLOCK_SIZE * (k / w_height);
-
-        for(int i = 0; i < CHUNK_SIZE; i++) 
-        {
-            for(int j = 0; j < CHUNK_SIZE; j++) 
-            {
-                if(k >= 32 && k < 40)
-                {
-                    c.arr[i][j].col = Collider::none;
-                    c.arr[i][j].color = SDL_MapRGBA(formatPix, 0, 0, 0, 255);
-                }
-                else {
-                    c.arr[i][j].col = Collider::hard;
-                    c.arr[i][j].color = SDL_MapRGBA(formatPix, 255, 255, 255, 255);
-                }
-            }
-        }
-
+        c.x_off_w = CHUNK_RES * (k % w_width);
+        c.y_off_w = CHUNK_RES * height;
+    
         chunks.push_back(c);
+
+        if((k+1) % w_height == 0 && k != 0)
+            height++;
     }
 
-
+    for(int y = 0; y < noise_h; y++) 
+    {
+        for(int x = 0; x < noise_w; x++) 
+        {
+            int cindex = WORLD_CHUNK_W * ceil(y / CHUNK_SIZE) + ceil(x / CHUNK_SIZE);
+            chunks[cindex].arr[x % 32][y % 32].color = textureBuffer[x][y];   
+        }
+    }
+ 
     return chunks;
 }
 
@@ -307,8 +317,13 @@ int main(int argc, char* argv[])
                         r = 0; g = 0; b = 0; a = 0;
                         
                         SDL_GetRGBA(pixel, pixel_format, &r, &g, &b, &a);
+                        
+                        Uint8 luminance = (0.2126*r + 0.7152*g + 0.0722*b);
 
-                        SDL_SetRenderDrawColor(renderer, r, g,b, a);
+                        if(luminance > (255 / 2))
+                            SDL_SetRenderDrawColor(renderer, r, g,b, a);
+                        else
+                            SDL_SetRenderDrawColor(renderer, r,g,b, a);
                         SDL_Rect rect {
                             (i * BLOCK_SIZE + chunks[k].x_off_w) - camera.x, 
                             (j * BLOCK_SIZE + chunks[k].y_off_w) - camera.y, 
@@ -345,9 +360,9 @@ int main(int argc, char* argv[])
         player.vely = 9.81;
         
         if(keystate[SDL_SCANCODE_A] == 1)
-            player.velx = -20;
+            player.velx = -10;
         if(keystate[SDL_SCANCODE_D] == 1)
-            player.velx = 20;
+            player.velx = 10;
         if(keystate[SDL_SCANCODE_S] == 1 && player_b_col && !jump) 
         {
             player.vely -= JUMP_FORCE * 1500 * dt;
@@ -358,7 +373,7 @@ int main(int argc, char* argv[])
         if(player_b_col)
             GRAVITY = 0;
         else
-            GRAVITY = 9.81;
+            GRAVITY = 9.81 * 2;
 
         player.vely += GRAVITY * dt;
 

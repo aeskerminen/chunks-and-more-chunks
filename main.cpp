@@ -258,49 +258,11 @@ void do_player_collision(player player, const std::vector<chunk>& chunks,  bool*
 
                 SDL_RenderDrawRectF(renderer, &target_colliders[i]);
             }
-
         }
 }
 
-int main(int argc, char* argv[]) 
+void do_render(const std::vector<chunk> &chunks, player player) 
 {
-    if(!initialize()) 
-        SDL_Quit();
-
-    SDL_Event e; 
-    bool quit = false; 
-   
-    std::vector<chunk> chunks = generate_world(WORLD_CHUNK_W, WORLD_CHUNK_H); 
-    
-    player player {4 * CHUNK_RES, 4 * CHUNK_RES, 0, 0};
-    bool jump = false;
-
-
-    Uint32 lastFrame = SDL_GetTicks();
-
-    int GRAVITY = 9.81;
-
-    while(!quit) 
-    {
-        bool mouse_left_press = false;
-
-        while(SDL_PollEvent(&e)) 
-        { 
-            if(e.type == SDL_QUIT)    
-                quit = true;
-            if(e.type == SDL_MOUSEBUTTONDOWN)
-                mouse_left_press = true;
-        }
-
-        Uint32 curFrame = SDL_GetTicks();
-        
-        Uint32 difference = curFrame - lastFrame;
-		float dt = difference / 25.0f;
-
-		lastFrame = curFrame;
-
-        // RENDER
-
         SDL_PixelFormat* pixel_format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888);
         
         SDL_SetRenderDrawColor(renderer, 0,0,0,255);
@@ -357,8 +319,48 @@ int main(int argc, char* argv[])
 
         SDL_Rect test {player.x - camera.x, player.y - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
         SDL_RenderFillRect(renderer, &test);
+}
+
+int main(int argc, char* argv[]) 
+{
+    if(!initialize()) 
+        SDL_Quit();
+
+    SDL_Event e; 
+    bool quit = false; 
+   
+    std::vector<chunk> chunks = generate_world(WORLD_CHUNK_W, WORLD_CHUNK_H); 
+    
+    player player {4 * CHUNK_RES, 4 * CHUNK_RES, 0, 0};
+    bool jump = false;
 
 
+    Uint32 lastFrame = SDL_GetTicks();
+
+    int GRAVITY = 9.81;
+
+    while(!quit) 
+    {
+        bool mouse_left_press = false;
+
+        while(SDL_PollEvent(&e)) 
+        { 
+            if(e.type == SDL_QUIT)    
+                quit = true;
+            if(e.type == SDL_MOUSEBUTTONDOWN)
+                mouse_left_press = true;
+        }
+
+        Uint32 curFrame = SDL_GetTicks();
+        
+        Uint32 difference = curFrame - lastFrame;
+		float dt = difference / 25.0f;
+
+		lastFrame = curFrame;
+
+        // RENDER
+        do_render(chunks, player);
+        
         // LOGIC
         const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 
@@ -445,7 +447,7 @@ int main(int argc, char* argv[])
         }
 
 
-        // CAMERA
+        // CAMERA FREE-MOVE
         if(keystate[SDL_SCANCODE_LEFT] == 1)
             cam_vel_x = -25 * dt;
         if(keystate[SDL_SCANCODE_RIGHT] == 1)
@@ -456,11 +458,23 @@ int main(int argc, char* argv[])
             cam_vel_y = 25 * dt;
         
         if(camera.x + cam_vel_x >= 0 && camera.x + cam_vel_x <= WORLD_CHUNK_W * CHUNK_SIZE * BLOCK_SIZE)
+        {    
             camera.x += cam_vel_x;
+        }
         if(camera.y + cam_vel_y <= WORLD_CHUNK_H * CHUNK_SIZE * BLOCK_SIZE - SCREEN_HEIGHT 
                 && camera.y + cam_vel_y >= 0)
-            camera.y += cam_vel_y;
+        { 
+                camera.y += cam_vel_y;
+        }
 
+        SDL_FRect player_rect {player.x - camera.x, player.y - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
+
+        SDL_Log("%f / %f | %f / %f", camera.x, camera.y, player.x, player.y);
+
+
+        camera.x += (player.x - camera.x - SCREEN_WIDTH / 2) * dt * 0.15f;
+        camera.y += (player.y - camera.y - SCREEN_HEIGHT / 2) * dt * 0.15f;
+        
         SDL_RenderPresent(renderer);
         
     }

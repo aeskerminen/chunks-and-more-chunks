@@ -269,6 +269,13 @@ void do_render(const std::vector<chunk> &chunks, player player)
         SDL_SetRenderDrawColor(renderer, 0,0,0,255);
         SDL_RenderClear(renderer);
         
+        SDL_Color colors[3] = 
+        {
+            {86, 125, 70, 255},
+            {155, 118, 83, 255},
+            {96, 103, 107, 255},
+        };
+
         for(int k = 0; k < chunks.size(); k++) 
         { 
             SDL_FRect chunkrect {
@@ -294,8 +301,15 @@ void do_render(const std::vector<chunk> &chunks, player player)
                         
                         Uint8 luminance = (0.2126*r + 0.7152*g + 0.0722*b);
 
-                        if(luminance > (255 / 2))
-                            SDL_SetRenderDrawColor(renderer, r, g,b, a);
+                        if(luminance > (255 / 2)) 
+                        {
+                            if(luminance < 170)
+                                SDL_SetRenderDrawColor(renderer, colors[0].r, colors[0].g ,colors[0].b, a);
+                            else if(luminance < 213) 
+                                SDL_SetRenderDrawColor(renderer, colors[1].r, colors[1].g ,colors[1].b, a);
+                            else
+                                SDL_SetRenderDrawColor(renderer, colors[2].r, colors[2].g ,colors[2].b, a);
+                        }
                         else
                             SDL_SetRenderDrawColor(renderer, 0, 0, 0, a);
 

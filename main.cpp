@@ -385,7 +385,7 @@ int main(int argc, char* argv[])
         if(player_b_col)
             GRAVITY = 0;
         else
-            GRAVITY = 9.81 * 2;
+            GRAVITY = 9.81 * 4;
 
         player.vely += GRAVITY * dt;
 

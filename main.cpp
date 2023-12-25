@@ -145,6 +145,17 @@ void do_player_collision(const player& player, const std::vector<chunk>& chunks,
         // THE BLOCK ON WHICH THE PLAYERS HEAD IS ON
         int block_x_global = floor(player.x / BLOCK_SIZE);
         int block_y_global = floor(player.y / BLOCK_SIZE);
+
+        int x_local_left  = (block_x_global - 1) % CHUNK_SIZE;
+        int x_local_right = (block_x_global + 1) % CHUNK_SIZE;
+       
+        // Chunk index based on global block location (chunk of block)
+        int cx_l = ceil((block_x_global - 1) / CHUNK_SIZE);
+        int cx_r = ceil((block_x_global + 1) / CHUNK_SIZE);
+            
+        int target_x_l = (block_x_global - 1) * BLOCK_SIZE;
+        int target_x_r = (block_x_global + 1) * BLOCK_SIZE;
+            
         
         // BOTTOM COLLISION        
         {
@@ -153,8 +164,8 @@ void do_player_collision(const player& player, const std::vector<chunk>& chunks,
             SDL_Point local_points[3] = 
             {
                 {block_x_global % CHUNK_SIZE, y_local},
-                {(block_x_global + 1) % CHUNK_SIZE, y_local},
-                {(block_x_global - 1) % CHUNK_SIZE, y_local}
+                {x_local_right, y_local},
+                {x_local_left, y_local}
             };
 
             // Calculate target chunk index
@@ -162,27 +173,27 @@ void do_player_collision(const player& player, const std::vector<chunk>& chunks,
             int target_chunks[3] = 
             {
                 WORLD_CHUNK_W * cy + ceil(block_x_global / CHUNK_SIZE),
-                WORLD_CHUNK_W * cy + ceil((block_x_global + 1) / CHUNK_SIZE),
-                WORLD_CHUNK_W * cy + ceil((block_x_global - 1) / CHUNK_SIZE) 
+                WORLD_CHUNK_W * cy + cx_r,
+                WORLD_CHUNK_W * cy + cx_l 
             };
            
-            int target_y =  ((block_y_global + 2) * BLOCK_SIZE);
+            int target_y = ((block_y_global + 2) * BLOCK_SIZE);
             SDL_FRect target_colliders[3] = 
             {
                 {
-                     (block_x_global * BLOCK_SIZE) - camera.x,
+                    (block_x_global * BLOCK_SIZE) - camera.x,
                     target_y - camera.y,
                     BLOCK_SIZE,
                     BLOCK_SIZE
                 },
                 {
-                    ((block_x_global + 1) * BLOCK_SIZE) - camera.x,
+                    target_x_r - camera.x,
                     target_y - camera.y,
                     BLOCK_SIZE,
                     BLOCK_SIZE
                 },
                 {
-                    ((block_x_global - 1) * BLOCK_SIZE) - camera.x,
+                    target_x_l - camera.x,
                     target_y - camera.y,
                     BLOCK_SIZE,
                     BLOCK_SIZE
@@ -201,8 +212,6 @@ void do_player_collision(const player& player, const std::vector<chunk>& chunks,
 
         // LEFT & RIGHT COLLISION
         {
-            int x_local_left  = (block_x_global - 1) % CHUNK_SIZE;
-            int x_local_right = (block_x_global + 1) % CHUNK_SIZE;
             int y_local_top = block_y_global % CHUNK_SIZE;
             int y_local_bot = (block_y_global + 1) % CHUNK_SIZE;
 
@@ -216,8 +225,7 @@ void do_player_collision(const player& player, const std::vector<chunk>& chunks,
             
             int cy = ceil((block_y_global) / CHUNK_SIZE);
             int cy_bot = ceil((block_y_global + 1) / CHUNK_SIZE);
-            int cx_l = ceil((block_x_global - 1) / CHUNK_SIZE);
-            int cx_r = ceil((block_x_global + 1) / CHUNK_SIZE);
+           
             int target_chunks[4] = 
             {
                 WORLD_CHUNK_W * cy + cx_l,
@@ -226,8 +234,6 @@ void do_player_collision(const player& player, const std::vector<chunk>& chunks,
                 WORLD_CHUNK_W * cy_bot + cx_r,
             };
            
-            int target_x_l = (block_x_global - 1) * BLOCK_SIZE;
-            int target_x_r = (block_x_global + 1) * BLOCK_SIZE;
             int target_y_top = block_y_global * BLOCK_SIZE;
             int target_y_bot = (block_y_global + 1) * BLOCK_SIZE;
             

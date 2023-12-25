@@ -133,7 +133,7 @@ std::vector<chunk> generate_world(int w_width, int w_height)
     return chunks;
 }
 
-void do_player_collision(player player, const std::vector<chunk>& chunks,  bool* col_b, bool* col_l, bool* col_r) 
+void do_player_collision(const player& player, const std::vector<chunk>& chunks,  bool* col_b, bool* col_l, bool* col_r) 
 {
         *col_b = false;
         *col_l = false;
@@ -148,38 +148,42 @@ void do_player_collision(player player, const std::vector<chunk>& chunks,  bool*
         
         // BOTTOM COLLISION        
         {
+            int y_local = (block_y_global + 2) % CHUNK_SIZE;
 
             SDL_Point local_points[3] = 
             {
-                {block_x_global % CHUNK_SIZE, (block_y_global + 2) % CHUNK_SIZE},
-                {(block_x_global + 1) % CHUNK_SIZE, (block_y_global + 2) % CHUNK_SIZE},
-                {(block_x_global - 1) % CHUNK_SIZE, (block_y_global + 2) % CHUNK_SIZE}
+                {block_x_global % CHUNK_SIZE, y_local},
+                {(block_x_global + 1) % CHUNK_SIZE, y_local},
+                {(block_x_global - 1) % CHUNK_SIZE, y_local}
             };
 
+            // Calculate target chunk index
+            int cy = ceil((block_y_global + 2) / CHUNK_SIZE);
             int target_chunks[3] = 
             {
-                WORLD_CHUNK_W * ceil((block_y_global + 2) / CHUNK_SIZE) + ceil(block_x_global / CHUNK_SIZE),
-                WORLD_CHUNK_W * ceil((block_y_global + 2) / CHUNK_SIZE) + ceil((block_x_global + 1) / CHUNK_SIZE),
-                WORLD_CHUNK_W * ceil((block_y_global + 2) / CHUNK_SIZE) + ceil((block_x_global - 1) / CHUNK_SIZE) 
+                WORLD_CHUNK_W * cy + ceil(block_x_global / CHUNK_SIZE),
+                WORLD_CHUNK_W * cy + ceil((block_x_global + 1) / CHUNK_SIZE),
+                WORLD_CHUNK_W * cy + ceil((block_x_global - 1) / CHUNK_SIZE) 
             };
-            
+           
+            int target_y =  ((block_y_global + 2) * BLOCK_SIZE);
             SDL_FRect target_colliders[3] = 
             {
                 {
                      (block_x_global * BLOCK_SIZE) - camera.x,
-                    ((block_y_global + 2) * BLOCK_SIZE) - camera.y,
+                    target_y - camera.y,
                     BLOCK_SIZE,
                     BLOCK_SIZE
                 },
                 {
                     ((block_x_global + 1) * BLOCK_SIZE) - camera.x,
-                    ((block_y_global + 2) * BLOCK_SIZE) - camera.y,
+                    target_y - camera.y,
                     BLOCK_SIZE,
                     BLOCK_SIZE
                 },
                 {
                     ((block_x_global - 1) * BLOCK_SIZE) - camera.x,
-                    ((block_y_global + 2) * BLOCK_SIZE) - camera.y,
+                    target_y - camera.y,
                     BLOCK_SIZE,
                     BLOCK_SIZE
                 },
@@ -197,47 +201,59 @@ void do_player_collision(player player, const std::vector<chunk>& chunks,  bool*
 
         // LEFT & RIGHT COLLISION
         {
+            int x_local_left  = (block_x_global - 1) % CHUNK_SIZE;
+            int x_local_right = (block_x_global + 1) % CHUNK_SIZE;
+            int y_local_top = block_y_global % CHUNK_SIZE;
+            int y_local_bot = (block_y_global + 1) % CHUNK_SIZE;
 
             SDL_Point local_points[4] = 
             {
-                {(block_x_global - 1) % CHUNK_SIZE, (block_y_global) % CHUNK_SIZE},
-                {(block_x_global - 1) % CHUNK_SIZE, (block_y_global + 1) % CHUNK_SIZE},
-                {(block_x_global + 1) % CHUNK_SIZE, (block_y_global) % CHUNK_SIZE},
-                {(block_x_global + 1) % CHUNK_SIZE, (block_y_global + 1) % CHUNK_SIZE}
+                {x_local_left,  y_local_top},
+                {x_local_left,  y_local_bot},
+                {x_local_right, y_local_top},
+                {x_local_right, y_local_bot}
             };
-
+            
+            int cy = ceil((block_y_global) / CHUNK_SIZE);
+            int cy_bot = ceil((block_y_global + 1) / CHUNK_SIZE);
+            int cx_l = ceil((block_x_global - 1) / CHUNK_SIZE);
+            int cx_r = ceil((block_x_global + 1) / CHUNK_SIZE);
             int target_chunks[4] = 
             {
-                WORLD_CHUNK_W * ceil((block_y_global) / CHUNK_SIZE) + ceil((block_x_global - 1) / CHUNK_SIZE),
-                WORLD_CHUNK_W * ceil((block_y_global + 1) / CHUNK_SIZE) + ceil((block_x_global - 1) / CHUNK_SIZE),
-                WORLD_CHUNK_W * ceil((block_y_global) / CHUNK_SIZE) + ceil((block_x_global + 1) / CHUNK_SIZE),
-                WORLD_CHUNK_W * ceil((block_y_global + 1) / CHUNK_SIZE) + ceil((block_x_global + 1) / CHUNK_SIZE),
-            
+                WORLD_CHUNK_W * cy + cx_l,
+                WORLD_CHUNK_W * cy_bot + cx_l,
+                WORLD_CHUNK_W * cy + cx_r,
+                WORLD_CHUNK_W * cy_bot + cx_r,
             };
+           
+            int target_x_l = (block_x_global - 1) * BLOCK_SIZE;
+            int target_x_r = (block_x_global + 1) * BLOCK_SIZE;
+            int target_y_top = block_y_global * BLOCK_SIZE;
+            int target_y_bot = (block_y_global + 1) * BLOCK_SIZE;
             
             SDL_FRect target_colliders[4] = 
             {
                 {
-                    ((block_x_global - 1) * BLOCK_SIZE) - camera.x,
-                    ((block_y_global) * BLOCK_SIZE) - camera.y,
+                    target_x_l - camera.x,
+                    target_y_top - camera.y,
                     BLOCK_SIZE * 1.025,
                     BLOCK_SIZE
                 },
                 {
-                    ((block_x_global - 1) * BLOCK_SIZE) - camera.x,
-                    ((block_y_global + 1) * BLOCK_SIZE) - camera.y,
+                    target_x_l - camera.x,
+                    target_y_bot - camera.y,
                     BLOCK_SIZE * 1.025,
                     BLOCK_SIZE
                 },
                 {
-                    ((block_x_global + 1) * BLOCK_SIZE) - camera.x,
-                    ((block_y_global) * BLOCK_SIZE) - camera.y,
+                    target_x_r - camera.x,
+                    target_y_top - camera.y,
                     BLOCK_SIZE * 1.025,
                     BLOCK_SIZE
                 },
                 {
-                    ((block_x_global + 1) * BLOCK_SIZE) - camera.x,
-                    ((block_y_global + 1) * BLOCK_SIZE) - camera.y,
+                    target_x_r - camera.x,
+                    target_y_bot - camera.y,
                     BLOCK_SIZE * 1.025,
                     BLOCK_SIZE
                 }

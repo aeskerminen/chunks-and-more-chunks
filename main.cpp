@@ -385,9 +385,9 @@ int main(int argc, char* argv[])
         if(player_b_col)
             GRAVITY = 0;
         else
-            GRAVITY = 9.81 * 4;
+            GRAVITY = 9.81 * 2;
 
-        player.vely += GRAVITY * dt;
+        player.vely += GRAVITY;
 
         // Add motion to player
         if(!player_b_col)

@@ -56,10 +56,13 @@ float cam_vel_y = 0;
 
 #define TERMINAL_VELOCITY 9.81 * 5
 #define JUMP_FORCE 50
+int GRAVITY = 9.81;
+
 typedef struct player 
 {
     float x, y;
     float velx, vely;
+    bool jump;
 } player;
 
 enum Collider {hard, soft, none}; 
@@ -358,6 +361,77 @@ void do_render(const std::vector<chunk> &chunks, player player)
         SDL_RenderFillRect(renderer, &test);
 }
 
+void do_player_move(player* player, const Uint8* keystate, const float dt, const bool bcol, const bool lcol, const bool rcol) 
+{
+        // PLAYER
+        if(keystate[SDL_SCANCODE_A] == 1)
+            player->velx = -10;
+        if(keystate[SDL_SCANCODE_D] == 1)
+            player->velx = 10;
+        if(keystate[SDL_SCANCODE_S] == 1 && bcol && !player->jump) 
+        {
+            player->vely -= JUMP_FORCE;
+            player->jump = true;
+        }
+        if (keystate[SDL_SCANCODE_S] == 0) { player->jump = false; }
+
+        if(bcol)
+            GRAVITY = 0;
+        else
+            GRAVITY = 9.81;
+
+        player->vely += GRAVITY * dt;
+        
+        if(player->vely > TERMINAL_VELOCITY)
+            player->vely = TERMINAL_VELOCITY;
+
+        // Add motion to player
+        if(!bcol)
+            player->y += player->vely * dt;
+        else if(bcol && player->vely < 0)
+            player->y += player->vely * dt;
+
+        if(!lcol && player->velx < 0)
+            player->x += player->velx * dt;
+        if(!rcol && player->velx > 0)
+            player->x += player->velx * dt;
+
+        player->velx = 0; 
+}
+
+void do_camera_move(player player, const Uint8* keystate, const float dt) 
+{
+        cam_vel_x = 0;
+        cam_vel_y = 0;
+        
+        // CAMERA FREE-MOVE
+        if(keystate[SDL_SCANCODE_LEFT] == 1)
+            cam_vel_x = -25 * dt;
+        if(keystate[SDL_SCANCODE_RIGHT] == 1)
+            cam_vel_x = 25 * dt;
+        if(keystate[SDL_SCANCODE_UP] == 1)
+            cam_vel_y = -25 * dt;
+        if(keystate[SDL_SCANCODE_DOWN] == 1)
+            cam_vel_y = 25 * dt;
+        
+        if(camera.x + cam_vel_x >= 0 && camera.x + cam_vel_x <= WORLD_CHUNK_W * CHUNK_SIZE * BLOCK_SIZE)
+        {    
+            camera.x += cam_vel_x;
+        }
+        if(camera.y + cam_vel_y <= WORLD_CHUNK_H * CHUNK_SIZE * BLOCK_SIZE - SCREEN_HEIGHT 
+                && camera.y + cam_vel_y >= 0)
+        { 
+                camera.y += cam_vel_y;
+        }
+
+        SDL_FRect player_rect {player.x - camera.x, player.y - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
+
+        camera.x += (player.x - camera.x - SCREEN_WIDTH / 2) * dt * 0.15f;
+        camera.y += (player.y - camera.y - SCREEN_HEIGHT / 2) * dt * 0.15f;
+
+
+}
+
 int main(int argc, char* argv[]) 
 {
     if(!initialize()) 
@@ -368,13 +442,11 @@ int main(int argc, char* argv[])
    
     std::vector<chunk> chunks = generate_world(WORLD_CHUNK_W, WORLD_CHUNK_H); 
     
-    player player {4 * CHUNK_RES, 4 * CHUNK_RES, 0, 0};
-    bool jump = false;
+    player player {4 * CHUNK_RES, 4 * CHUNK_RES, 0, 0, false};
 
 
     Uint32 lastFrame = SDL_GetTicks();
 
-    int GRAVITY = 9.81;
     player.vely = 0;
 
     while(!quit) 
@@ -396,55 +468,15 @@ int main(int argc, char* argv[])
 
 		lastFrame = curFrame;
 
-        // RENDER
-        do_render(chunks, player);
-        
         // LOGIC
         const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 
-        cam_vel_x = 0;
-        cam_vel_y = 0;
-
+        // PLAYER COLLISION
         bool player_b_col, player_l_col, player_r_col;
         do_player_collision(player, chunks, &player_b_col, &player_l_col, &player_r_col);
-
+      
         // PLAYER
-        
-        if(keystate[SDL_SCANCODE_A] == 1)
-            player.velx = -10;
-        if(keystate[SDL_SCANCODE_D] == 1)
-            player.velx = 10;
-        if(keystate[SDL_SCANCODE_S] == 1 && player_b_col && !jump) 
-        {
-            player.vely -= JUMP_FORCE;
-            jump = true;
-        }
-        if (keystate[SDL_SCANCODE_S] == 0) { jump = false; }
-
-        if(player_b_col)
-            GRAVITY = 0;
-        else
-            GRAVITY = 9.81;
-
-        player.vely += GRAVITY * dt;
-        
-        if(player.vely > TERMINAL_VELOCITY)
-            player.vely = TERMINAL_VELOCITY;
-
-        // Add motion to player
-        if(!player_b_col)
-            player.y += player.vely * dt;
-        else if(player_b_col && player.vely < 0)
-            player.y += player.vely * dt;
-
-        if(!player_l_col && player.velx < 0)
-            player.x += player.velx * dt;
-        if(!player_r_col && player.velx > 0)
-            player.x += player.velx * dt;
-
-        player.velx = 0;
-        
-        // REMOVING BLOCK (DEBUG STAGE
+        do_player_move(&player, keystate, dt, player_b_col, player_l_col, player_r_col);
         
         // Get mouse localtion in world coordinates
         int mx, my;
@@ -486,31 +518,12 @@ int main(int argc, char* argv[])
             mouse_left_press = false;
         }
 
+        // CAMERA
+        do_camera_move(player, keystate, dt);
+       
 
-        // CAMERA FREE-MOVE
-        if(keystate[SDL_SCANCODE_LEFT] == 1)
-            cam_vel_x = -25 * dt;
-        if(keystate[SDL_SCANCODE_RIGHT] == 1)
-            cam_vel_x = 25 * dt;
-        if(keystate[SDL_SCANCODE_UP] == 1)
-            cam_vel_y = -25 * dt;
-        if(keystate[SDL_SCANCODE_DOWN] == 1)
-            cam_vel_y = 25 * dt;
-        
-        if(camera.x + cam_vel_x >= 0 && camera.x + cam_vel_x <= WORLD_CHUNK_W * CHUNK_SIZE * BLOCK_SIZE)
-        {    
-            camera.x += cam_vel_x;
-        }
-        if(camera.y + cam_vel_y <= WORLD_CHUNK_H * CHUNK_SIZE * BLOCK_SIZE - SCREEN_HEIGHT 
-                && camera.y + cam_vel_y >= 0)
-        { 
-                camera.y += cam_vel_y;
-        }
-
-        SDL_FRect player_rect {player.x - camera.x, player.y - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
-
-        camera.x += (player.x - camera.x - SCREEN_WIDTH / 2) * dt * 0.15f;
-        camera.y += (player.y - camera.y - SCREEN_HEIGHT / 2) * dt * 0.15f;
+        // RENDER
+        do_render(chunks, player);        
         
         SDL_RenderPresent(renderer);
         

@@ -65,6 +65,7 @@ typedef struct player
     float x, y;
     float velx, vely;
     bool jump;
+    bool coll[3];
 } player;
 
 enum Collider {none=0, soft, hard};
@@ -168,12 +169,14 @@ std::vector<chunk> generate_world(int w_width, int w_height)
     return chunks;
 }
 
-void do_player_collision(const player& player, const std::vector<chunk>& chunks,  bool* col_b, bool* col_l, bool* col_r) 
+void do_player_collision(player& player, const std::vector<chunk>& chunks) 
 {
-        *col_b = false;
-        *col_l = false;
-        *col_r = false;
-        
+        bool& col_l = player.coll[0];
+        bool& col_b = player.coll[1];
+        bool& col_r = player.coll[2];
+
+        col_l = col_b = col_r = false;
+
         // PLAYER COLLIDER
         SDL_FRect player_col {(player.x) - camera.x, (player.y) - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
         
@@ -240,7 +243,7 @@ void do_player_collision(const player& player, const std::vector<chunk>& chunks,
                 if(SDL_HasIntersectionF(&target_colliders[i], &player_col) && 
                     chunks[target_chunks[i]].arr[local_points[i].x][local_points[i].y].col 
                     == Collider::hard)
-                    *col_b = true;
+                    col_b = true;
             }  
 
         }
@@ -309,9 +312,9 @@ void do_player_collision(const player& player, const std::vector<chunk>& chunks,
                     == Collider::hard) 
                 { 
                     if(i < 2)
-                        *col_l = true;
+                        col_l = true;
                     else
-                        *col_r = true;
+                        col_r = true;
                 }
 
                 SDL_RenderDrawRectF(renderer, &target_colliders[i]);
@@ -393,42 +396,46 @@ void do_render(const std::vector<chunk> &chunks, player player)
         SDL_RenderFillRect(renderer, &test);
 }
 
-void do_player_move(player* player, const Uint8* keystate, const float dt, const bool bcol, const bool lcol, const bool rcol) 
+void do_player_move(player& player, const Uint8* keystate, const float dt) 
 {
+        bool& lcol = player.coll[0];
+        bool& bcol = player.coll[1];
+        bool& rcol = player.coll[2];
+
         // PLAYER
         if(keystate[SDL_SCANCODE_A] == 1)
-            player->velx = -10;
+            player.velx = -10;
         if(keystate[SDL_SCANCODE_D] == 1)
-            player->velx = 10;
-        if(keystate[SDL_SCANCODE_S] == 1 && bcol && !player->jump) 
+            player.velx = 10;
+        if(keystate[SDL_SCANCODE_S] == 1 && bcol && !player.jump) 
         {
-            player->vely -= JUMP_FORCE;
-            player->jump = true;
+            player.vely -= JUMP_FORCE;
+            player.jump = true;
         }
-        if (keystate[SDL_SCANCODE_S] == 0) { player->jump = false; }
+        if (keystate[SDL_SCANCODE_S] == 0) { player.jump = false; }
 
         if(bcol)
             GRAVITY = 0;
         else
             GRAVITY = 9.81;
 
-        player->vely += GRAVITY * dt;
+        player.vely += GRAVITY * dt;
         
-        if(player->vely > TERMINAL_VELOCITY)
-            player->vely = TERMINAL_VELOCITY;
+        if(player.vely > TERMINAL_VELOCITY)
+            player.vely = TERMINAL_VELOCITY;
 
         // Add motion to player
         if(!bcol)
-            player->y += player->vely * dt;
-        else if(bcol && player->vely < 0)
-            player->y += player->vely * dt;
+            player.y += player.vely * dt;
+        else if(bcol && player.vely < 0)
+            player.y += player.vely * dt;
 
-        if(!lcol && player->velx < 0)
-            player->x += player->velx * dt;
-        if(!rcol && player->velx > 0)
-            player->x += player->velx * dt;
+        if(!lcol && player.velx < 0)
+            player.x += player.velx * dt;
+        if(!rcol && player.velx > 0)
+            player.x += player.velx * dt;
 
-        player->velx = 0; 
+        player.velx = 0; 
 }
 
 void do_camera_move(player player, const Uint8* keystate, const float dt) 
@@ -515,15 +522,11 @@ int main(int argc, char* argv[])
     SDL_Event e; 
     bool quit = false; 
    
-    std::vector<chunk> chunks = generate_world(WORLD_CHUNK_W, WORLD_CHUNK_H); 
-    
-    player player {4 * CHUNK_RES, 4 * CHUNK_RES, 0, 0, false};
-
-
     Uint32 lastFrame = SDL_GetTicks();
 
-    player.vely = 0;
-
+    std::vector<chunk> chunks = generate_world(WORLD_CHUNK_W, WORLD_CHUNK_H);  
+    player player {4 * CHUNK_RES, 4 * CHUNK_RES, 0, 0, false, {0,0,0}};
+    
     while(!quit) 
     {
         bool mouse_left_press = false;
@@ -548,11 +551,10 @@ int main(int argc, char* argv[])
         const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 
         // PLAYER COLLISION
-        bool player_b_col, player_l_col, player_r_col;
-        do_player_collision(player, chunks, &player_b_col, &player_l_col, &player_r_col);
+        do_player_collision(player, chunks);
       
         // PLAYER
-        do_player_move(&player, keystate, dt, player_b_col, player_l_col, player_r_col);
+        do_player_move(player, keystate, dt);
        
         // REMOVE BLOCK AT CURSOR
         remove_block_at_cursor(chunks, mouse_left_press);

@@ -2,6 +2,8 @@
 #include <SDL2/SDL_image.h>
 #include <stdio.h>
 #include <vector>
+#include <string>
+#include <iostream>
 
 const int SCREEN_WIDTH = 1920;
 const int SCREEN_HEIGHT = 1200;
@@ -65,10 +67,31 @@ typedef struct player
     bool jump;
 } player;
 
-enum Collider {hard, soft, none}; 
+enum Collider {none=0, soft, hard};
+enum TType {air=0, grass, dirt, rock};
+
+// DEBUG
+
+const char* ColliderStrings[] = 
+{
+    "none",
+    "soft",
+    "hard"
+};
+
+const char* TTypeStrings[] = 
+{
+    "air",
+    "grass",
+    "dirt",
+    "rock",
+};
+
+// DEBUG END
+
 typedef struct tile 
 {
-    char type;
+    TType type;
     Uint32 color;
     Collider col;
 } tile;
@@ -130,6 +153,15 @@ std::vector<chunk> generate_world(int w_width, int w_height)
                 curtile->col = Collider::hard;
             else
                 curtile->col = Collider::none;
+
+            if(luminance < (255/2))
+                curtile->type = TType::air;
+            else if(luminance < 170)
+                curtile->type = TType::grass;
+            else if(luminance < 213)
+                curtile->type = TType::dirt;
+            else
+                curtile->type = TType::rock;
         }
     }
  
@@ -455,12 +487,23 @@ void remove_block_at_cursor(std::vector<chunk>& chunks, bool& mouse_left_press)
     // Get actual index
     int m_block_chunk_index = WORLD_CHUNK_W * m_block_chunk_index_y + m_block_chunk_index_x;
 
+    // Reference to block
+    auto& block = chunks[m_block_chunk_index].arr[m_block_local_x][m_block_local_y];
+
     // Remove block
+    
+    /*
     if(mouse_left_press) 
     {
-        chunks[m_block_chunk_index].arr[m_block_local_x][m_block_local_y].col = Collider::none; 
-        chunks[m_block_chunk_index].arr[m_block_local_x][m_block_local_y].color= 0;  
+        block.col = Collider::none; 
+        block.color= 0;  
         mouse_left_press = false;
+    }
+    */
+    if(mouse_left_press) 
+    {
+        SDL_Log("Type: %s, Color: %d, Collider: %s\n", 
+                TTypeStrings[block.type], block.color, ColliderStrings[block.col]);
     }
 }
 

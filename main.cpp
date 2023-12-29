@@ -432,6 +432,38 @@ void do_camera_move(player player, const Uint8* keystate, const float dt)
 
 }
 
+void remove_block_at_cursor(std::vector<chunk>& chunks, bool& mouse_left_press) 
+{ 
+    // Get mouse localtion in world coordinates
+    int mx, my;
+    SDL_GetMouseState(&mx, &my);
+
+    int mx_world = mx + camera.x;
+    int my_world = my + camera.y;
+
+    // Get block at world coordinates
+    int m_block_global_x = (mx_world / BLOCK_SIZE);
+    int m_block_global_y = (my_world / BLOCK_SIZE);
+
+    int m_block_local_x = m_block_global_x % CHUNK_SIZE;
+    int m_block_local_y = m_block_global_y % CHUNK_SIZE;
+
+    // Get chunk from global block position
+    int m_block_chunk_index_x = ceil(m_block_global_x / CHUNK_SIZE);
+    int m_block_chunk_index_y = ceil(m_block_global_y / CHUNK_SIZE);
+    
+    // Get actual index
+    int m_block_chunk_index = WORLD_CHUNK_W * m_block_chunk_index_y + m_block_chunk_index_x;
+
+    // Remove block
+    if(mouse_left_press) 
+    {
+        chunks[m_block_chunk_index].arr[m_block_local_x][m_block_local_y].col = Collider::none; 
+        chunks[m_block_chunk_index].arr[m_block_local_x][m_block_local_y].color= 0;  
+        mouse_left_press = false;
+    }
+}
+
 int main(int argc, char* argv[]) 
 {
     if(!initialize()) 
@@ -469,6 +501,7 @@ int main(int argc, char* argv[])
 		lastFrame = curFrame;
 
         // LOGIC
+
         const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 
         // PLAYER COLLISION
@@ -477,50 +510,12 @@ int main(int argc, char* argv[])
       
         // PLAYER
         do_player_move(&player, keystate, dt, player_b_col, player_l_col, player_r_col);
-        
-        // Get mouse localtion in world coordinates
-        int mx, my;
-        SDL_GetMouseState(&mx, &my);
-
-        int mx_world = mx + camera.x;
-        int my_world = my + camera.y;
-
-        //SDL_Log("%d / %d", mx_world, my_world);
-
-        SDL_Rect DEBUG_MOUSE 
-        {
-            mx,
-            my,
-            15,
-            15
-        };
-
-
-        // Get block at world coordinates
-        int m_block_global_x = (mx_world / BLOCK_SIZE);
-        int m_block_global_y = (my_world / BLOCK_SIZE);
-
-        int m_block_local_x = m_block_global_x % CHUNK_SIZE;
-        int m_block_local_y = m_block_global_y % CHUNK_SIZE;
-
-        // Get chunk from global block position
-        int m_block_chunk_index_x = ceil(m_block_global_x / CHUNK_SIZE);
-        int m_block_chunk_index_y = ceil(m_block_global_y / CHUNK_SIZE);
-        
-        // Get actual index
-        int m_block_chunk_index = WORLD_CHUNK_W * m_block_chunk_index_y + m_block_chunk_index_x;
-
-        // Remove block
-        if(mouse_left_press) 
-        {
-            chunks[m_block_chunk_index].arr[m_block_local_x][m_block_local_y].col = Collider::none; 
-            chunks[m_block_chunk_index].arr[m_block_local_x][m_block_local_y].color= 0;  
-            mouse_left_press = false;
-        }
+       
+        // REMOVE BLOCK AT CURSOR
+        remove_block_at_cursor(chunks, mouse_left_press);
 
         // CAMERA
         do_camera_move(player, keystate, dt);
-       
 
         // RENDER
         do_render(chunks, player);        

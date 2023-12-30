@@ -42,17 +42,17 @@ bool initialize()
 #define PLAYER_WIDTH BLOCK_SIZE
 #define PLAYER_HEIGHT BLOCK_SIZE*2
 
-#define BLOCK_SIZE 40
-#define CHUNK_SIZE 32
+#define BLOCK_SIZE 30
+#define CHUNK_SIZE 16
 
-const int WORLD_CHUNK_W = 8;
-const int WORLD_CHUNK_H = 8;
+const int WORLD_CHUNK_W = 16;
+const int WORLD_CHUNK_H = 16;
 
-constexpr int CHUNK_RES = BLOCK_SIZE * CHUNK_SIZE;
-constexpr int WOLRD_RES = WORLD_CHUNK_W * WORLD_CHUNK_H * CHUNK_RES * CHUNK_RES;
+constexpr int CHUNK_PIXEL_WIDTH = BLOCK_SIZE * CHUNK_SIZE;
+constexpr int WOLRD_RES = WORLD_CHUNK_W * WORLD_CHUNK_H * CHUNK_PIXEL_WIDTH * CHUNK_PIXEL_WIDTH;
 
 // DEBUG LOCATION
-SDL_FRect camera {4 * CHUNK_RES, 4 * CHUNK_RES, SCREEN_WIDTH, SCREEN_HEIGHT};
+SDL_FRect camera {4 * CHUNK_PIXEL_WIDTH, 4 * CHUNK_PIXEL_WIDTH, SCREEN_WIDTH, SCREEN_HEIGHT};
 float cam_vel_x = 0;
 float cam_vel_y = 0;
 
@@ -128,8 +128,8 @@ std::vector<chunk> generate_world(int w_width, int w_height)
     for(int k = 0; k < w_width * w_height; k++) 
     {
         chunk c;
-        c.x_off_w = CHUNK_RES * (k % w_width);
-        c.y_off_w = CHUNK_RES * height;
+        c.x_off_w = CHUNK_PIXEL_WIDTH * (k % w_width);
+        c.y_off_w = CHUNK_PIXEL_WIDTH * height;
     
         chunks.push_back(c);
 
@@ -137,19 +137,22 @@ std::vector<chunk> generate_world(int w_width, int w_height)
             height++;
     }
 
-    for(int y = 0; y < noise_h; y++) 
+    for(int y = 0; y < CHUNK_SIZE * WORLD_CHUNK_H; y++) 
     {
-        for(int x = 0; x < noise_w; x++) 
+        for(int x = 0; x < CHUNK_SIZE * WORLD_CHUNK_W; x++) 
         {
             int cindex = WORLD_CHUNK_W * ceil(y / CHUNK_SIZE) + ceil(x / CHUNK_SIZE);
-            tile* curtile = &chunks[cindex].arr[x % 32][y % 32];
+            tile* curtile = &chunks[cindex].arr[x % CHUNK_SIZE][y % CHUNK_SIZE];
+            
+            int texture_x = x % noise_w;
+            int texture_y = y % noise_h;
 
             Uint8 r, g, b, a;
-            SDL_GetRGBA(textureBuffer[x][y], formatPix, &r, &g, &b, &a);
+            SDL_GetRGBA(textureBuffer[texture_x][texture_y], formatPix, &r, &g, &b, &a);
             Uint8 luminance = (0.2126*r + 0.7152*g + 0.0722*b);
 
-            curtile->color = textureBuffer[x][y];
-
+            curtile->color = textureBuffer[texture_x][texture_y];
+            
             if(luminance > (255 / 2))
                 curtile->col = Collider::hard;
             else
@@ -471,7 +474,7 @@ void do_camera_move(player player, const Uint8* keystate, const float dt)
 
 }
 
-void remove_block_at_cursor(std::vector<chunk>& chunks, bool& mouse_left_press) 
+void get_block_at_cursor(std::vector<chunk>& chunks) 
 { 
     // Get mouse localtion in world coordinates
     int mx, my;
@@ -499,19 +502,8 @@ void remove_block_at_cursor(std::vector<chunk>& chunks, bool& mouse_left_press)
 
     // Remove block
     
-    /*
-    if(mouse_left_press) 
-    {
-        block.col = Collider::none; 
-        block.color= 0;  
-        mouse_left_press = false;
-    }
-    */
-    if(mouse_left_press) 
-    {
-        SDL_Log("Type: %s, Color: %d, Collider: %s\n", 
-                TTypeStrings[block.type], block.color, ColliderStrings[block.col]);
-    }
+    SDL_Log("Type: %s, Color: %d, Collider: %s\n", 
+            TTypeStrings[block.type], block.color, ColliderStrings[block.col]);
 }
 
 int main(int argc, char* argv[]) 
@@ -525,7 +517,7 @@ int main(int argc, char* argv[])
     Uint32 lastFrame = SDL_GetTicks();
 
     std::vector<chunk> chunks = generate_world(WORLD_CHUNK_W, WORLD_CHUNK_H);  
-    player player {4 * CHUNK_RES, 4 * CHUNK_RES, 0, 0, false, {0,0,0}};
+    player player {4 * CHUNK_PIXEL_WIDTH, 4 * CHUNK_PIXEL_WIDTH, 0, 0, false, {0,0,0}};
     
     while(!quit) 
     {
@@ -556,8 +548,12 @@ int main(int argc, char* argv[])
         // PLAYER
         do_player_move(player, keystate, dt);
        
-        // REMOVE BLOCK AT CURSOR
-        remove_block_at_cursor(chunks, mouse_left_press);
+        // GET BLOCK AT CURSOR (IF CLICKED)
+        if(mouse_left_press) 
+        {
+            get_block_at_cursor(chunks);
+            mouse_left_press = false;
+        }
 
         // CAMERA
         do_camera_move(player, keystate, dt);

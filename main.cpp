@@ -39,8 +39,11 @@ bool initialize()
     return success;
 }
 
-#define PLAYER_WIDTH BLOCK_SIZE
-#define PLAYER_HEIGHT BLOCK_SIZE*2
+const int PLAYER_W_MULT = 2;
+const int PLAYER_H_MULT = 3;
+
+#define PLAYER_WIDTH BLOCK_SIZE*PLAYER_W_MULT
+#define PLAYER_HEIGHT BLOCK_SIZE*PLAYER_H_MULT
 
 #define BLOCK_SIZE 30
 #define CHUNK_SIZE 16
@@ -188,19 +191,19 @@ void do_player_collision(player& player, const std::vector<chunk>& chunks)
         int block_y_global = floor(player.y / BLOCK_SIZE);
 
         int x_local_left  = (block_x_global - 1) % CHUNK_SIZE;
-        int x_local_right = (block_x_global + 1) % CHUNK_SIZE;
+        int x_local_right = (block_x_global + PLAYER_W_MULT) % CHUNK_SIZE;
        
         // Chunk index based on global block location (chunk of block)
         int cx_l = ceil((block_x_global - 1) / CHUNK_SIZE);
-        int cx_r = ceil((block_x_global + 1) / CHUNK_SIZE);
+        int cx_r = ceil((block_x_global + PLAYER_W_MULT) / CHUNK_SIZE);
             
         int target_x_l = (block_x_global - 1) * BLOCK_SIZE;
-        int target_x_r = (block_x_global + 1) * BLOCK_SIZE;
+        int target_x_r = (block_x_global + PLAYER_W_MULT) * BLOCK_SIZE;
             
         
         // BOTTOM COLLISION        
         {
-            int y_local = (block_y_global + 2) % CHUNK_SIZE;
+            int y_local = (block_y_global + PLAYER_H_MULT) % CHUNK_SIZE;
 
             SDL_Point local_points[3] = 
             {
@@ -210,7 +213,7 @@ void do_player_collision(player& player, const std::vector<chunk>& chunks)
             };
 
             // Calculate target chunk index
-            int cy = ceil((block_y_global + 2) / CHUNK_SIZE);
+            int cy = ceil((block_y_global + PLAYER_H_MULT) / CHUNK_SIZE);
             int target_chunks[3] = 
             {
                 WORLD_CHUNK_W * cy + ceil(block_x_global / CHUNK_SIZE),
@@ -218,7 +221,7 @@ void do_player_collision(player& player, const std::vector<chunk>& chunks)
                 WORLD_CHUNK_W * cy + cx_l 
             };
            
-            int target_y = ((block_y_global + 2) * BLOCK_SIZE);
+            int target_y = ((block_y_global + PLAYER_H_MULT) * BLOCK_SIZE);
             SDL_FRect target_colliders[3] = 
             {
                 {
@@ -247,6 +250,8 @@ void do_player_collision(player& player, const std::vector<chunk>& chunks)
                     chunks[target_chunks[i]].arr[local_points[i].x][local_points[i].y].col 
                     == Collider::hard)
                     col_b = true;
+
+                SDL_RenderDrawRectF(renderer, &target_colliders[i]);
             }  
 
         }
@@ -538,6 +543,8 @@ int main(int argc, char* argv[])
 
 		lastFrame = curFrame;
 
+        do_render(chunks, player);
+
         // LOGIC
 
         const Uint8 *keystate = SDL_GetKeyboardState(NULL);
@@ -559,7 +566,7 @@ int main(int argc, char* argv[])
         do_camera_move(player, keystate, dt);
 
         // RENDER
-        do_render(chunks, player);        
+        //do_render(chunks, player);        
         
         SDL_RenderPresent(renderer);
         

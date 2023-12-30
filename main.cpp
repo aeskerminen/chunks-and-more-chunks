@@ -181,14 +181,35 @@ void do_player_collision(player& player, const std::vector<chunk>& chunks)
         bool& col_b = player.coll[1];
         bool& col_r = player.coll[2];
 
+        auto CIndexFromBlock = [](int bx, int by)
+        {
+            SDL_Point point;
+            point.x = ceil(bx / CHUNK_SIZE);
+            point.y = ceil(by / CHUNK_SIZE);
+
+            return point;
+        };
+
+        auto GetLocalBlockPoint = [](int bx, int by) 
+        {
+            SDL_Point point;
+            point.x = floor(bx % CHUNK_SIZE);
+            point.y = floor(by % CHUNK_SIZE);
+            
+            return point;
+        };
+
         col_l = col_b = col_r = false;
 
         // PLAYER COLLIDER
         SDL_FRect player_col {(player.x) - camera.x, (player.y) - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
         
         // THE BLOCK ON WHICH THE PLAYERS HEAD IS ON
+        SDL_Point PHeadBlock {floor(player.x / BLOCK_SIZE), floor(player.y / BLOCK_SIZE)};
+
         int block_x_global = floor(player.x / BLOCK_SIZE);
         int block_y_global = floor(player.y / BLOCK_SIZE);
+
 
         int x_local_left  = (block_x_global - 1) % CHUNK_SIZE;
         int x_local_right = (block_x_global + PLAYER_W_MULT) % CHUNK_SIZE;
@@ -203,57 +224,31 @@ void do_player_collision(player& player, const std::vector<chunk>& chunks)
         
         // BOTTOM COLLISION        
         {
-            int y_local = (block_y_global + PLAYER_H_MULT) % CHUNK_SIZE;
 
-            SDL_Point local_points[3] = 
+            for(int k = 0; k < PLAYER_W_MULT * 2; k++) 
             {
-                {block_x_global % CHUNK_SIZE, y_local},
-                {x_local_right, y_local},
-                {x_local_left, y_local}
-            };
-
-            // Calculate target chunk index
-            int cy = ceil((block_y_global + PLAYER_H_MULT) / CHUNK_SIZE);
-            int target_chunks[3] = 
-            {
-                WORLD_CHUNK_W * cy + ceil(block_x_global / CHUNK_SIZE),
-                WORLD_CHUNK_W * cy + cx_r,
-                WORLD_CHUNK_W * cy + cx_l 
-            };
-           
-            int target_y = ((block_y_global + PLAYER_H_MULT) * BLOCK_SIZE);
-            SDL_FRect target_colliders[3] = 
-            {
-                {
-                    (block_x_global * BLOCK_SIZE) - camera.x,
-                    target_y - camera.y,
+                int actual_loc = k - 1;
+                
+                SDL_Point globalCoord {PHeadBlock.x + actual_loc, PHeadBlock.y + PLAYER_H_MULT};
+                SDL_Point chunkCoord = CIndexFromBlock(globalCoord.x, globalCoord.y);
+                
+                int actualChunk = WORLD_CHUNK_W * chunkCoord.y + chunkCoord.x;
+                SDL_Point localCoord = GetLocalBlockPoint(globalCoord.x, globalCoord.y);
+                
+                SDL_FRect collider {
+                    globalCoord.x * BLOCK_SIZE - camera.x,
+                    globalCoord.y * BLOCK_SIZE - camera.y,
                     BLOCK_SIZE,
                     BLOCK_SIZE
-                },
-                {
-                    target_x_r - camera.x,
-                    target_y - camera.y,
-                    BLOCK_SIZE,
-                    BLOCK_SIZE
-                },
-                {
-                    target_x_l - camera.x,
-                    target_y - camera.y,
-                    BLOCK_SIZE,
-                    BLOCK_SIZE
-                },
-            };
-
-            for(int i = 0; i < 3; i++) 
-            {
-                if(SDL_HasIntersectionF(&target_colliders[i], &player_col) && 
-                    chunks[target_chunks[i]].arr[local_points[i].x][local_points[i].y].col 
+                };
+                
+                if(SDL_HasIntersectionF(&collider, &player_col) && 
+                    chunks[actualChunk].arr[localCoord.x][localCoord.y].col 
                     == Collider::hard)
                     col_b = true;
 
-                SDL_RenderDrawRectF(renderer, &target_colliders[i]);
-            }  
-
+                SDL_RenderDrawRectF(renderer, &collider);
+            }
         }
 
         // LEFT & RIGHT COLLISION

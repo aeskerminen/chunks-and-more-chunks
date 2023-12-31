@@ -180,6 +180,8 @@ void do_player_collision(player& player, const std::vector<chunk>& chunks)
         bool& col_l = player.coll[0];
         bool& col_b = player.coll[1];
         bool& col_r = player.coll[2];
+        
+        col_l = col_b = col_r = false;
 
         auto CIndexFromBlock = [](int bx, int by)
         {
@@ -199,29 +201,12 @@ void do_player_collision(player& player, const std::vector<chunk>& chunks)
             return point;
         };
 
-        col_l = col_b = col_r = false;
-
         // PLAYER COLLIDER
         SDL_FRect player_col {(player.x) - camera.x, (player.y) - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
         
         // THE BLOCK ON WHICH THE PLAYERS HEAD IS ON
         SDL_Point PHeadBlock {floor(player.x / BLOCK_SIZE), floor(player.y / BLOCK_SIZE)};
 
-        int block_x_global = floor(player.x / BLOCK_SIZE);
-        int block_y_global = floor(player.y / BLOCK_SIZE);
-
-
-        int x_local_left  = (block_x_global - 1) % CHUNK_SIZE;
-        int x_local_right = (block_x_global + PLAYER_W_MULT) % CHUNK_SIZE;
-       
-        // Chunk index based on global block location (chunk of block)
-        int cx_l = ceil((block_x_global - 1) / CHUNK_SIZE);
-        int cx_r = ceil((block_x_global + PLAYER_W_MULT) / CHUNK_SIZE);
-            
-        int target_x_l = (block_x_global - 1) * BLOCK_SIZE;
-        int target_x_r = (block_x_global + PLAYER_W_MULT) * BLOCK_SIZE;
-            
-        
         // BOTTOM COLLISION        
         {
 
@@ -253,74 +238,53 @@ void do_player_collision(player& player, const std::vector<chunk>& chunks)
 
         // LEFT & RIGHT COLLISION
         {
-            int y_local_top = block_y_global % CHUNK_SIZE;
-            int y_local_bot = (block_y_global + 1) % CHUNK_SIZE;
 
-            SDL_Point local_points[4] = 
-            {
-                {x_local_left,  y_local_top},
-                {x_local_left,  y_local_bot},
-                {x_local_right, y_local_top},
-                {x_local_right, y_local_bot}
-            };
-            
-            int cy = ceil((block_y_global) / CHUNK_SIZE);
-            int cy_bot = ceil((block_y_global + 1) / CHUNK_SIZE);
-           
-            int target_chunks[4] = 
-            {
-                WORLD_CHUNK_W * cy + cx_l,
-                WORLD_CHUNK_W * cy_bot + cx_l,
-                WORLD_CHUNK_W * cy + cx_r,
-                WORLD_CHUNK_W * cy_bot + cx_r,
-            };
-           
-            int target_y_top = block_y_global * BLOCK_SIZE;
-            int target_y_bot = (block_y_global + 1) * BLOCK_SIZE;
-            
-            SDL_FRect target_colliders[4] = 
-            {
-                {
-                    target_x_l - camera.x,
-                    target_y_top - camera.y,
-                    BLOCK_SIZE * 1.025,
+            // LEFT
+            for(int k = 0; k < PLAYER_H_MULT; k++) 
+            {        
+                SDL_Point globalCoord {PHeadBlock.x - 1, PHeadBlock.y + k};
+                SDL_Point chunkCoord = CIndexFromBlock(globalCoord.x, globalCoord.y);
+                
+                int actualChunk = WORLD_CHUNK_W * chunkCoord.y + chunkCoord.x;
+                SDL_Point localCoord = GetLocalBlockPoint(globalCoord.x, globalCoord.y);
+                
+                SDL_FRect collider {
+                    globalCoord.x * BLOCK_SIZE - camera.x,
+                    globalCoord.y * BLOCK_SIZE - camera.y,
+                    BLOCK_SIZE * 1.025f,
                     BLOCK_SIZE
-                },
-                {
-                    target_x_l - camera.x,
-                    target_y_bot - camera.y,
-                    BLOCK_SIZE * 1.025,
-                    BLOCK_SIZE
-                },
-                {
-                    target_x_r - camera.x,
-                    target_y_top - camera.y,
-                    BLOCK_SIZE * 1.025,
-                    BLOCK_SIZE
-                },
-                {
-                    target_x_r - camera.x,
-                    target_y_bot - camera.y,
-                    BLOCK_SIZE * 1.025,
-                    BLOCK_SIZE
-                }
-            };
+                };
+                
+                if(SDL_HasIntersectionF(&collider, &player_col) && 
+                    chunks[actualChunk].arr[localCoord.x][localCoord.y].col 
+                    == Collider::hard)
+                    col_l = true;
 
+                SDL_RenderDrawRectF(renderer, &collider);
+            }
 
-            SDL_SetRenderDrawColor(renderer, 255, 0, 100, 255);
-            for(int i = 0; i < 4; i++) 
-            {
-                if(SDL_HasIntersectionF(&target_colliders[i], &player_col) && 
-                    chunks[target_chunks[i]].arr[local_points[i].x][local_points[i].y].col 
-                    == Collider::hard) 
-                { 
-                    if(i < 2)
-                        col_l = true;
-                    else
-                        col_r = true;
-                }
+            // RIGHT
+            for(int k = 0; k < PLAYER_H_MULT; k++) 
+            {        
+                SDL_Point globalCoord {PHeadBlock.x + PLAYER_W_MULT, PHeadBlock.y + k};
+                SDL_Point chunkCoord = CIndexFromBlock(globalCoord.x, globalCoord.y);
+                
+                int actualChunk = WORLD_CHUNK_W * chunkCoord.y + chunkCoord.x;
+                SDL_Point localCoord = GetLocalBlockPoint(globalCoord.x, globalCoord.y);
+                
+                SDL_FRect collider {
+                    globalCoord.x * BLOCK_SIZE - camera.x,
+                    globalCoord.y * BLOCK_SIZE - camera.y,
+                    BLOCK_SIZE * 1.025f,
+                    BLOCK_SIZE
+                };
+                
+                if(SDL_HasIntersectionF(&collider, &player_col) && 
+                    chunks[actualChunk].arr[localCoord.x][localCoord.y].col 
+                    == Collider::hard)
+                    col_r = true;
 
-                SDL_RenderDrawRectF(renderer, &target_colliders[i]);
+                SDL_RenderDrawRectF(renderer, &collider);
             }
         }
 }

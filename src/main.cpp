@@ -5,12 +5,53 @@
 #include <string>
 #include <iostream>
 
+#include "chunk.h"
+#include "tile.h"
+#include "world_system.h"
+
 const int SCREEN_WIDTH = 1920;
 const int SCREEN_HEIGHT = 1200;
 
 SDL_Window* window = nullptr;
 SDL_Surface* surface = nullptr;
 SDL_Renderer* renderer = nullptr;
+
+const int PLAYER_W_MULT = 2;
+const int PLAYER_H_MULT = 3;
+
+constexpr int PLAYER_WIDTH = BLOCK_SIZE*PLAYER_W_MULT;
+constexpr int PLAYER_HEIGHT = BLOCK_SIZE*PLAYER_H_MULT;
+
+SDL_FRect camera {4 * CHUNK_PIXEL_WIDTH, 4 * CHUNK_PIXEL_WIDTH, SCREEN_WIDTH, SCREEN_HEIGHT};
+float cam_vel_x = 0;
+float cam_vel_y = 0;
+
+typedef struct item 
+{
+    Uint8 item_id;
+
+    bool stackable;
+    Uint8 count;
+} item;
+
+typedef struct inventory 
+{
+    std::vector<item> contents;
+    size_t max_size;
+} inventory;
+
+
+constexpr int TERMINAL_VELOCITY = 9.81 * 5;
+const int JUMP_FORCE = 50;
+int GRAVITY = 9.81;
+
+typedef struct player 
+{
+    float x, y;
+    float velx, vely;
+    bool jump;
+    bool coll[4];
+} player;
 
 bool initialize() 
 {
@@ -37,142 +78,6 @@ bool initialize()
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     return success;
-}
-
-const int PLAYER_W_MULT = 2;
-const int PLAYER_H_MULT = 3;
-
-#define PLAYER_WIDTH BLOCK_SIZE*PLAYER_W_MULT
-#define PLAYER_HEIGHT BLOCK_SIZE*PLAYER_H_MULT
-
-#define BLOCK_SIZE 30
-#define CHUNK_SIZE 16
-
-const int WORLD_CHUNK_W = 16;
-const int WORLD_CHUNK_H = 16;
-
-constexpr int CHUNK_PIXEL_WIDTH = BLOCK_SIZE * CHUNK_SIZE;
-constexpr int WOLRD_RES = WORLD_CHUNK_W * WORLD_CHUNK_H * CHUNK_PIXEL_WIDTH * CHUNK_PIXEL_WIDTH;
-
-// DEBUG LOCATION
-SDL_FRect camera {4 * CHUNK_PIXEL_WIDTH, 4 * CHUNK_PIXEL_WIDTH, SCREEN_WIDTH, SCREEN_HEIGHT};
-float cam_vel_x = 0;
-float cam_vel_y = 0;
-
-#define TERMINAL_VELOCITY 9.81 * 5
-#define JUMP_FORCE 50
-int GRAVITY = 9.81;
-
-typedef struct player 
-{
-    float x, y;
-    float velx, vely;
-    bool jump;
-    bool coll[4];
-} player;
-
-enum Collider {none=0, soft, hard};
-enum TType {air=0, grass, dirt, rock};
-
-// DEBUG
-
-const char* ColliderStrings[] = 
-{
-    "none",
-    "soft",
-    "hard"
-};
-
-const char* TTypeStrings[] = 
-{
-    "air",
-    "grass",
-    "dirt",
-    "rock",
-};
-
-// DEBUG END
-
-typedef struct tile 
-{
-    TType type;
-    Uint32 color;
-    Collider col;
-} tile;
-
-typedef struct chunk 
-{
-    tile arr[CHUNK_SIZE][CHUNK_SIZE];
-    int x_off_w;
-    int y_off_w;
-    bool change;
-} chunk;
-
-std::vector<chunk> generate_world(int w_width, int w_height) 
-{
-    auto noise = IMG_Load("./samplenoise.png");
-    Uint32* pixels = (Uint32*)noise->pixels;
-
-    size_t noise_w = noise->w;
-    size_t noise_h = noise->h;
-
-    Uint32** textureBuffer = (Uint32**)malloc(noise_h * sizeof(Uint32*));
-    for (int i = 0; i < noise_h; i++)
-        textureBuffer[i] = (Uint32*)malloc(noise_w * sizeof(Uint32));
-
-    for(int y = 0; y < noise_h; y++)
-        for(int x = 0; x < noise_w; x++)
-            textureBuffer[x][y] = pixels[noise_w * y + x];
-
-    SDL_PixelFormat *formatPix = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888);    
-    std::vector<chunk> chunks;
-
-    int height = 0;
-    for(int k = 0; k < w_width * w_height; k++) 
-    {
-        chunk c;
-        c.x_off_w = CHUNK_PIXEL_WIDTH * (k % w_width);
-        c.y_off_w = CHUNK_PIXEL_WIDTH * height;
-    
-        chunks.push_back(c);
-
-        if((k+1) % w_height == 0 && k != 0)
-            height++;
-    }
-
-    for(int y = 0; y < CHUNK_SIZE * WORLD_CHUNK_H; y++) 
-    {
-        for(int x = 0; x < CHUNK_SIZE * WORLD_CHUNK_W; x++) 
-        {
-            int cindex = WORLD_CHUNK_W * ceil(y / CHUNK_SIZE) + ceil(x / CHUNK_SIZE);
-            tile* curtile = &chunks[cindex].arr[x % CHUNK_SIZE][y % CHUNK_SIZE];
-            
-            int texture_x = x % noise_w;
-            int texture_y = y % noise_h;
-
-            Uint8 r, g, b, a;
-            SDL_GetRGBA(textureBuffer[texture_x][texture_y], formatPix, &r, &g, &b, &a);
-            Uint8 luminance = (0.2126*r + 0.7152*g + 0.0722*b);
-
-            curtile->color = textureBuffer[texture_x][texture_y];
-            
-            if(luminance > (255 / 2))
-                curtile->col = Collider::hard;
-            else
-                curtile->col = Collider::none;
-
-            if(luminance < (255/2))
-                curtile->type = TType::air;
-            else if(luminance < 170)
-                curtile->type = TType::grass;
-            else if(luminance < 213)
-                curtile->type = TType::dirt;
-            else
-                curtile->type = TType::rock;
-        }
-    }
- 
-    return chunks;
 }
 
 void do_player_collision(player& player, const std::vector<chunk>& chunks) 
@@ -542,7 +447,6 @@ void do_show_mouse_helper(const std::vector<chunk>& chunks)
     }
 } 
 
-
 int main(int argc, char* argv[]) 
 {
     if(!initialize()) 
@@ -554,7 +458,14 @@ int main(int argc, char* argv[])
     Uint32 lastFrame = SDL_GetTicks();
 
     std::vector<chunk> chunks = generate_world(WORLD_CHUNK_W, WORLD_CHUNK_H);  
-    player player {4 * CHUNK_PIXEL_WIDTH, 4 * CHUNK_PIXEL_WIDTH, 0, 0, false, {0,0,0}};
+    player player {
+        4 * CHUNK_PIXEL_WIDTH - 8 * BLOCK_SIZE, 
+        4 * CHUNK_PIXEL_WIDTH - 22 * BLOCK_SIZE, 
+        0,
+        0, 
+        false, 
+        {0,0,0}
+    };
     
     while(!quit) 
     {

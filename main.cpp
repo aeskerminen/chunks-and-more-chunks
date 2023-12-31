@@ -319,7 +319,7 @@ void do_player_collision(player& player, const std::vector<chunk>& chunks)
         }
 }
 
-void do_render(const std::vector<chunk> &chunks, player player) 
+void do_render_chunks(const std::vector<chunk> &chunks, player player) 
 {
         SDL_PixelFormat* pixel_format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888);
         
@@ -471,7 +471,7 @@ void do_camera_move(player player, const Uint8* keystate, const float dt)
 
 }
 
-void get_block_at_cursor(std::vector<chunk>& chunks) 
+void get_block_at_cursor(const std::vector<chunk>& chunks) 
 { 
     // Get mouse localtion in world coordinates
     int mx, my;
@@ -497,11 +497,51 @@ void get_block_at_cursor(std::vector<chunk>& chunks)
     // Reference to block
     auto& block = chunks[m_block_chunk_index].arr[m_block_local_x][m_block_local_y];
 
-    // Remove block
-    
+    // Remove block 
     SDL_Log("Type: %s, Color: %d, Collider: %s\n", 
             TTypeStrings[block.type], block.color, ColliderStrings[block.col]);
 }
+
+void do_show_mouse_helper(const std::vector<chunk>& chunks) 
+{
+     // Get mouse localtion in world coordinates
+    int mx, my;
+    SDL_GetMouseState(&mx, &my);
+
+    int mx_world = mx + camera.x;
+    int my_world = my + camera.y;
+
+    // Get block at world coordinates
+    int m_block_global_x = (mx_world / BLOCK_SIZE);
+    int m_block_global_y = (my_world / BLOCK_SIZE);
+
+    int m_block_local_x = m_block_global_x % CHUNK_SIZE;
+    int m_block_local_y = m_block_global_y % CHUNK_SIZE;
+
+    // Get chunk from global block position
+    int m_block_chunk_index_x = ceil(m_block_global_x / CHUNK_SIZE);
+    int m_block_chunk_index_y = ceil(m_block_global_y / CHUNK_SIZE);
+    
+    // Get actual index
+    int m_block_chunk_index = WORLD_CHUNK_W * m_block_chunk_index_y + m_block_chunk_index_x;
+
+    // Reference to block
+    auto& block = chunks[m_block_chunk_index].arr[m_block_local_x][m_block_local_y];
+
+    if(block.col != Collider::none) 
+    {
+        SDL_FRect helper {
+            m_block_global_x * BLOCK_SIZE - camera.x, 
+            m_block_global_y * BLOCK_SIZE - camera.y, 
+            BLOCK_SIZE, 
+            BLOCK_SIZE
+        };
+
+        SDL_SetRenderDrawColor(renderer, 200, 100,200, 100);
+        SDL_RenderDrawRectF(renderer, &helper);
+    }
+} 
+
 
 int main(int argc, char* argv[]) 
 {
@@ -535,18 +575,20 @@ int main(int argc, char* argv[])
 
 		lastFrame = curFrame;
 
-        do_render(chunks, player);
-
-        // LOGIC
-
         const Uint8 *keystate = SDL_GetKeyboardState(NULL);
+
+        // RENDER CHUNKS
+        do_render_chunks(chunks, player);
+
+        // MOUSE HELPER
+        do_show_mouse_helper(chunks);
 
         // PLAYER COLLISION
         do_player_collision(player, chunks);
       
         // PLAYER
         do_player_move(player, keystate, dt);
-       
+      
         // GET BLOCK AT CURSOR (IF CLICKED)
         if(mouse_left_press) 
         {
@@ -556,10 +598,8 @@ int main(int argc, char* argv[])
 
         // CAMERA
         do_camera_move(player, keystate, dt);
-
-        // RENDER
-        //do_render(chunks, player);        
-        
+ 
+        // Draw
         SDL_RenderPresent(renderer);
         
     }

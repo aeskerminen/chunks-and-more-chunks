@@ -2,8 +2,7 @@
 #define CHUNK
 
 #include "tile.h"
-
-const int CHUNK_SIZE = 16;
+#include "globals.h"
 
 typedef struct chunk 
 {

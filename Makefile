@@ -1,4 +1,4 @@
-#Copyright Notice:
+
 #The files within this zip file are copyrighted by Lazy Foo' Productions (2004-2014)
 #and may not be redistributed without written permission.
 
@@ -20,4 +20,4 @@ OBJ_NAME = game
 
 #This is the target that compiles our executable
 all : $(OBJS)
-	$(CC) $(OBJS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(OBJ_NAME) -g
+	$(CC) $(OBJS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(OBJ_NAME) -g:

@@ -8,6 +8,7 @@
 #include "chunk.h"
 #include "tile.h"
 #include "world_system.h"
+#include "player.h"
 
 const int SCREEN_WIDTH = 1920;
 const int SCREEN_HEIGHT = 1200;
@@ -40,19 +41,7 @@ typedef struct inventory
     size_t max_size;
 } inventory;
 
-
-constexpr int TERMINAL_VELOCITY = 9.81 * 5;
-const int JUMP_FORCE = 50;
 int GRAVITY = 9.81;
-
-typedef struct player 
-{
-    float x, y;
-    float velx, vely;
-    bool jump;
-    bool coll[4];
-} player;
-
 bool initialize() 
 {
     bool success = true;

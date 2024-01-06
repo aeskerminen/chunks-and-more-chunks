@@ -153,9 +153,9 @@ void do_player_move(player& player, const Uint8* keystate, const float dt)
 
         // PLAYER
         if(keystate[SDL_SCANCODE_A] == 1)
-            player.velx = -10;
+            player.velx = -0.45;
         if(keystate[SDL_SCANCODE_D] == 1)
-            player.velx = 10;
+            player.velx = 0.45;
         if(keystate[SDL_SCANCODE_S] == 1 && bcol && !tcol && !player.jump) 
         {
             player.vely -= JUMP_FORCE;
@@ -171,12 +171,12 @@ void do_player_move(player& player, const Uint8* keystate, const float dt)
         else
             gmult = 1;
 
-        player.vely += GRAVITY * gmult * dt;
+        player.vely += GRAVITY * gmult;
         
         if(player.vely > TERMINAL_VELOCITY)
             player.vely = TERMINAL_VELOCITY;
         if(tcol)
-            player.vely = GRAVITY * dt;
+            player.vely = GRAVITY;
 
         // Add motion to player
         if(!bcol)

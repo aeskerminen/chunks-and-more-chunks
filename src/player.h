@@ -8,8 +8,8 @@
 #include "tile.h"
 #include "chunk.h"
 
-constexpr int TERMINAL_VELOCITY = 9.81 * 5;
-const int JUMP_FORCE = 50;
+constexpr int TERMINAL_VELOCITY = 3.81;
+const int JUMP_FORCE = 12;
 
 
 typedef struct player 

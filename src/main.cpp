@@ -10,6 +10,8 @@
 #include "world_system.h"
 #include "player.h"
 #include "globals.h"
+#include "item.h"
+#include "inventory.h"
 
 SDL_Window* window = nullptr;
 SDL_Surface* surface = nullptr;
@@ -18,20 +20,6 @@ SDL_Renderer* renderer = nullptr;
 SDL_FRect camera {4 * CHUNK_PIXEL_WIDTH, 4 * CHUNK_PIXEL_WIDTH, SCREEN_WIDTH, SCREEN_HEIGHT};
 float cam_vel_x = 0;
 float cam_vel_y = 0;
-
-typedef struct item 
-{
-    Uint8 item_id;
-
-    bool stackable;
-    Uint8 count;
-} item;
-
-typedef struct inventory 
-{
-    std::vector<item> contents;
-    size_t max_size;
-} inventory;
 
 bool initialize() 
 {
@@ -141,30 +129,28 @@ void do_camera_move(player player, const Uint8* keystate, const float dt)
         
         // CAMERA FREE-MOVE
         if(keystate[SDL_SCANCODE_LEFT] == 1)
-            cam_vel_x = -25 * dt;
+            cam_vel_x = -10;
         if(keystate[SDL_SCANCODE_RIGHT] == 1)
-            cam_vel_x = 25 * dt;
+            cam_vel_x = 10;
         if(keystate[SDL_SCANCODE_UP] == 1)
-            cam_vel_y = -25 * dt;
+            cam_vel_y = -10;
         if(keystate[SDL_SCANCODE_DOWN] == 1)
-            cam_vel_y = 25 * dt;
+            cam_vel_y = 10;
         
         if(camera.x + cam_vel_x >= 0 && camera.x + cam_vel_x <= WORLD_CHUNK_W * CHUNK_SIZE * BLOCK_SIZE)
         {    
-            camera.x += cam_vel_x;
+            camera.x += cam_vel_x * dt;
         }
         if(camera.y + cam_vel_y <= WORLD_CHUNK_H * CHUNK_SIZE * BLOCK_SIZE - SCREEN_HEIGHT 
                 && camera.y + cam_vel_y >= 0)
         { 
-                camera.y += cam_vel_y;
+                camera.y += cam_vel_y * dt;
         }
 
         SDL_FRect player_rect {player.x - camera.x, player.y - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
 
         camera.x += (player.x - camera.x - SCREEN_WIDTH / 2) * dt * 0.15f;
         camera.y += (player.y - camera.y - SCREEN_HEIGHT / 2) * dt * 0.15f;
-
-
 }
 
 void get_block_at_cursor(const std::vector<chunk>& chunks) 
@@ -258,6 +244,11 @@ int main(int argc, char* argv[])
         {0,0,0}
     };
     
+    Uint64 cur_frame = SDL_GetPerformanceCounter();
+    Uint64 last_frame = 0;
+    
+    double dt = 0;
+
     while(!quit) 
     {
         bool mouse_left_press = false;
@@ -270,12 +261,12 @@ int main(int argc, char* argv[])
                 mouse_left_press = true;
         }
 
-        Uint32 curFrame = SDL_GetTicks();
-        
-        Uint32 difference = curFrame - lastFrame;
-		float dt = difference / 25.0f;
+        last_frame = cur_frame;
+        cur_frame = SDL_GetPerformanceCounter();
 
-		lastFrame = curFrame;
+        dt = (double)((cur_frame - last_frame) * 1000 / (double)SDL_GetPerformanceFrequency());
+
+        SDL_Log("%f\n", dt);
 
         const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 
@@ -303,7 +294,6 @@ int main(int argc, char* argv[])
  
         // Draw
         SDL_RenderPresent(renderer);
-        
     }
 
 

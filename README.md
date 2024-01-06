@@ -1,3 +1,3 @@
-# TERRARIA C-LONE
+# CHUNKS AND MORE CHUNKS
 
-### My attempt at making a terraria-like 2D sanbox game
+### Does what it says on the can.

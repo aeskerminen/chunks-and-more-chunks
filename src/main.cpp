@@ -149,8 +149,8 @@ void do_camera_move(player player, const Uint8* keystate, const float dt)
 
         SDL_FRect player_rect {player.x - camera.x, player.y - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
 
-        camera.x += (player.x - camera.x - SCREEN_WIDTH / 2) * dt * 0.15f;
-        camera.y += (player.y - camera.y - SCREEN_HEIGHT / 2) * dt * 0.15f;
+        camera.x += (player.x - camera.x - SCREEN_WIDTH / 2) * dt * 0.005f;
+        camera.y += (player.y - camera.y - SCREEN_HEIGHT / 2) * dt * 0.005f;
 }
 
 void get_block_at_cursor(const std::vector<chunk>& chunks) 

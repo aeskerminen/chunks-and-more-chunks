@@ -29,6 +29,8 @@ void do_player_collision(player& player, const std::vector<chunk>& chunks, const
 
         // PLAYER COLLIDER
         SDL_FRect player_col {(player.x) - camera.x, (player.y) - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
+        SDL_FRect player_col_vert {(player.x) - camera.x + (PLAYER_WIDTH * 0.025f) / 2, (player.y) - camera.y, PLAYER_WIDTH * 0.975f, PLAYER_HEIGHT};
+        
         
         // THE BLOCK ON WHICH THE PLAYERS HEAD IS ON
         SDL_Point PHeadBlock {floor(player.x / BLOCK_SIZE), floor(player.y / BLOCK_SIZE)};
@@ -54,7 +56,7 @@ void do_player_collision(player& player, const std::vector<chunk>& chunks, const
                     BLOCK_SIZE
                 };
                 
-                if(SDL_HasIntersectionF(&collider, &player_col) && 
+                if(SDL_HasIntersectionF(&collider, &player_col_vert) && 
                     chunks[actualChunk].arr[localCoord.x][localCoord.y].col 
                     == Collider::hard)
                     col_b = true;

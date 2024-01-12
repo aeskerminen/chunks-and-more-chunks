@@ -5,6 +5,8 @@
 #include <string>
 #include <iostream>
 
+#include <stdlib.h>
+
 #include "chunk.h"
 #include "tile.h"
 #include "world_system.h"
@@ -334,18 +336,27 @@ int main(int argc, char* argv[])
         if(mouse_left_press) 
         {
             tile* p = get_block_at_cursor(chunks);
-            
+            if(p->type == TType::air)
+                continue;
+
             item collected_item {p->type, false, 1};
-            player.inv.contents.push_back(collected_item);
+
+            bool found = false;
+            for(int i = 0; i < player.inv.contents.size(); i++) 
+            {
+                if(player.inv.contents[i].item_id == p->type) 
+                {
+                    player.inv.contents[i].count++;
+                    found = true;
+                    break;
+                }
+            }
+            if(!found)
+                player.inv.contents.push_back(collected_item);
 
             *p = empty_tile;
             
             mouse_left_press = false;
-
-            for(auto x : player.inv.contents)
-            {
-                SDL_Log("%d %d %d", x.item_id, x.stackable, x.count);
-            }
         }
 
         // CAMERA
@@ -357,13 +368,23 @@ int main(int argc, char* argv[])
         if (nk_begin(ctx, "Inventory", nk_rect(20, 20, 500, 300),
             NK_WINDOW_BORDER))
         {
-            enum {EASY, HARD};
-            static int op = EASY;
-            static int property = 20;
-
             nk_layout_row_static(ctx, 30, 80, 1);
             nk_label(ctx, "Inventory", NK_TEXT_LEFT);
-            nk_layout_row_dynamic(ctx, 30, 1);
+            
+            nk_layout_row_dynamic(ctx, 0, 6);
+            for(auto x : player.inv.contents) 
+            {
+
+                char count_p[64];
+                char buff[128];
+
+                sprintf(count_p, "%d", x.count);
+
+                strcpy(buff, TTypeStrings[x.item_id]);
+                strcat(buff, ", ");
+                strcat(buff, count_p);
+                nk_label(ctx, buff, NK_TEXT_CENTERED); 
+            }
         }
         nk_end(ctx);
 

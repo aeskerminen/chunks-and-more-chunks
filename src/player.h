@@ -7,6 +7,7 @@
 #include "globals.h"
 #include "tile.h"
 #include "chunk.h"
+#include "inventory.h"
 
 constexpr int TERMINAL_VELOCITY = 3.81;
 const int JUMP_FORCE = 12;
@@ -18,6 +19,7 @@ typedef struct player
     float velx, vely;
     bool jump;
     bool coll[4];
+    inventory inv;
 } player;
 
 void do_player_collision(player& player, const std::vector<chunk>& chunks, const SDL_FRect& camera);

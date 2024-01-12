@@ -156,7 +156,7 @@ void do_camera_move(player player, const Uint8* keystate, const float dt)
         camera.y += (player.y - camera.y - SCREEN_HEIGHT / 2) * dt * 0.005f;
 }
 
-void get_block_at_cursor(const std::vector<chunk>& chunks) 
+tile* get_block_at_cursor(std::vector<chunk>& chunks) 
 { 
     // Get mouse localtion in world coordinates
     int mx, my;
@@ -185,6 +185,8 @@ void get_block_at_cursor(const std::vector<chunk>& chunks)
     // Remove block 
     SDL_Log("Type: %s, Color: %d, Collider: %s\n", 
             TTypeStrings[block.type], block.color, ColliderStrings[block.col]);
+
+    return &chunks[m_block_chunk_index].arr[m_block_local_x][m_block_local_y];
 }
 
 void do_show_mouse_helper(const std::vector<chunk>& chunks) 
@@ -246,6 +248,9 @@ int main(int argc, char* argv[])
         false, 
         {0,0,0}
     };
+    player.inv.max_size = 40;
+
+    tile empty_tile {TType::air, 0, Collider::none};
     
     Uint64 cur_frame = SDL_GetPerformanceCounter();
     Uint64 last_frame = 0;
@@ -269,7 +274,7 @@ int main(int argc, char* argv[])
 
         dt = (double)((cur_frame - last_frame) * 1000 / (double)SDL_GetPerformanceFrequency());
 
-        SDL_Log("%f\n", dt);
+        //SDL_Log("%f\n", dt);
 
         const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 
@@ -288,8 +293,19 @@ int main(int argc, char* argv[])
         // GET BLOCK AT CURSOR (IF CLICKED)
         if(mouse_left_press) 
         {
-            get_block_at_cursor(chunks);
+            tile* p = get_block_at_cursor(chunks);
+            
+            item collected_item {p->type, false, 1};
+            player.inv.contents.push_back(collected_item);
+
+            *p = empty_tile;
+            
             mouse_left_press = false;
+
+            for(auto x : player.inv.contents)
+            {
+                SDL_Log("%d %d %d", x.item_id, x.stackable, x.count);
+            }
         }
 
         // CAMERA

@@ -124,20 +124,23 @@ void do_render_chunks(const std::vector<chunk> &chunks, player player)
 
 void do_camera_move(player player, const Uint8* keystate, const float dt) 
 {
+
+        const float cam_base_vel = 0.75f;
+
         cam_vel_x = 0;
         cam_vel_y = 0;
         
         // CAMERA FREE-MOVE
         if(keystate[SDL_SCANCODE_LEFT] == 1)
-            cam_vel_x = -10;
+            cam_vel_x = -cam_base_vel;
         if(keystate[SDL_SCANCODE_RIGHT] == 1)
-            cam_vel_x = 10;
+            cam_vel_x = cam_base_vel;
         if(keystate[SDL_SCANCODE_UP] == 1)
-            cam_vel_y = -10;
+            cam_vel_y = -cam_base_vel;
         if(keystate[SDL_SCANCODE_DOWN] == 1)
-            cam_vel_y = 10;
+            cam_vel_y = cam_base_vel;
         
-        if(camera.x + cam_vel_x >= 0 && camera.x + cam_vel_x <= WORLD_CHUNK_W * CHUNK_SIZE * BLOCK_SIZE)
+        if(camera.x + cam_vel_x <= WORLD_CHUNK_W * CHUNK_SIZE * BLOCK_SIZE)
         {    
             camera.x += cam_vel_x * dt;
         }

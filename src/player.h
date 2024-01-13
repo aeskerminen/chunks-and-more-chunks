@@ -12,6 +12,7 @@
 constexpr int TERMINAL_VELOCITY = 3.81;
 const int JUMP_FORCE = 12;
 
+enum HandMode {PLACE=0, ATTACK, NONE};
 
 typedef struct player 
 {
@@ -20,6 +21,8 @@ typedef struct player
     bool jump;
     bool coll[4];
     inventory inv;
+    item* curItem;
+    HandMode handmode;
 } player;
 
 void do_player_collision(player& player, const std::vector<chunk>& chunks, const SDL_FRect& camera);

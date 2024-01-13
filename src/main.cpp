@@ -243,7 +243,20 @@ void do_show_mouse_helper(const std::vector<chunk>& chunks)
         SDL_SetRenderDrawColor(renderer, 200, 100,200, 100);
         SDL_RenderDrawRectF(renderer, &helper);
     }
-} 
+}
+
+typedef struct floatingItem:
+{
+    Item item;
+    SDL_FRect rect;
+    Uint16 chunkIndex; 
+    Uint32 color;
+} floatingItem;
+
+void onBlockDestroy() 
+{
+    
+}
 
 int main(int argc, char* argv[]) 
 {
@@ -277,7 +290,8 @@ int main(int argc, char* argv[])
    
     Uint32 lastFrame = SDL_GetTicks();
 
-    std::vector<chunk> chunks = generate_world(WORLD_CHUNK_W, WORLD_CHUNK_H);  
+    std::vector<chunk> chunks = generate_world(WORLD_CHUNK_W, WORLD_CHUNK_H);
+    std::vector<floatingItem> floatingItems;
     player player {
         4 * CHUNK_PIXEL_WIDTH - 8 * BLOCK_SIZE, 
         4 * CHUNK_PIXEL_WIDTH - 22 * BLOCK_SIZE, 
@@ -323,22 +337,30 @@ int main(int argc, char* argv[])
         // RENDER CHUNKS
         do_render_chunks(chunks, player);
 
-        // MOUSE HELPER
-        do_show_mouse_helper(chunks);
+        // Handle floating items
+        
 
         // PLAYER COLLISION
         do_player_collision(player, chunks, camera);
       
         // PLAYER
-        do_player_move(player, keystate, dt);
-      
+        do_player_move(player, keystate, dt);      
+
+        // MOUSE HELPER
+        do_show_mouse_helper(chunks);
+
         // GET BLOCK AT CURSOR (IF CLICKED)
         if(mouse_left_press) 
         {
             tile* p = get_block_at_cursor(chunks);
-            if(p->type == TType::air)
+         
+
+
+            /*
+            if(p->type == TType::air || player.handmode == HandMode::NONE)
                 continue;
 
+            
             item collected_item {p->type, false, 1};
 
             bool found = false;
@@ -355,7 +377,8 @@ int main(int argc, char* argv[])
                 player.inv.contents.push_back(collected_item);
 
             *p = empty_tile;
-            
+            */
+
             mouse_left_press = false;
         }
 

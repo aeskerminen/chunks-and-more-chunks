@@ -1,7 +1,7 @@
 #ifndef ITEM
 #define ITEM
 
-typedef struct item 
+typedef struct Item 
 {
     Uint8 item_id;
 

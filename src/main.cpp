@@ -245,7 +245,7 @@ void do_show_mouse_helper(const std::vector<chunk>& chunks)
     }
 }
 
-typedef struct floatingItem:
+typedef struct floatingItem
 {
     Item item;
     SDL_FRect rect;

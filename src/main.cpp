@@ -29,8 +29,6 @@
 #include "nuklear.h"
 #include "../lib/nuklear_sdl_renderer.h"
 
-#include "../lib/sqlite/sqlite3.h"
-
 SDL_Window* window = nullptr;
 SDL_Surface* surface = nullptr;
 SDL_Renderer* renderer = nullptr;

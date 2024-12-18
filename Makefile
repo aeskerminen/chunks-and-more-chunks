@@ -2,7 +2,7 @@
 #and may not be redistributed without written permission.
 
 #OBJS specifies which files to compile as part of the project
-OBJS = src/*.cpp
+OBJS = $(wildcard src/*.cpp)
 
 #CC specifies which compiler we're using
 CC = g++
@@ -19,4 +19,4 @@ OBJ_NAME = game
 
 #This is the target that compiles our executable
 all : $(OBJS)
-	$(CC) $(OBJS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o build/$(OBJ_NAME)
+	$(CC) $(OBJS) $(COMPILER_FLAGS) -L C:\sdl2\lib $(LINKER_FLAGS) -I C:\sdl2\include -o build/$(OBJ_NAME)

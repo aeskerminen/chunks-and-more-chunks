@@ -1,4 +1,5 @@
 #include "player.h"
+#include <cmath>
 
 void do_player_collision(player& player, const std::vector<chunk>& chunks, const SDL_FRect& camera) 
 {

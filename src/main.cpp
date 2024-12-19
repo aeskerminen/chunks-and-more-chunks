@@ -7,6 +7,9 @@
 
 #include <stdlib.h>
 
+#define NK_IMPLEMENTATION
+#define NK_SDL_RENDERER_IMPLEMENTATION
+
 #include "chunk.h"
 #include "tile.h"
 #include "world_system.h"
@@ -15,20 +18,8 @@
 #include "item.h"
 #include "inventory.h"
 #include "camera.h"
-#include "pointer.h" 
-
-#define NK_IMPLEMENTATION
-#define NK_INCLUDE_FIXED_TYPES
-#define NK_INCLUDE_STANDARD_IO
-#define NK_INCLUDE_STANDARD_VARARGS
-#define NK_INCLUDE_DEFAULT_ALLOCATOR
-#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
-#define NK_INCLUDE_FONT_BAKING
-#define NK_INCLUDE_DEFAULT_FONT
-#define NK_IMPLEMENTATION
-#define NK_SDL_RENDERER_IMPLEMENTATION
-#include "../lib/nuklear.h"
-#include "../lib/nuklear_sdl_renderer.h"
+#include "pointer.h"
+#include "ui.h"
 
 SDL_Window *window = nullptr;
 SDL_Surface *surface = nullptr;
@@ -153,24 +144,7 @@ int WinMain(int argc, char *argv[])
         SDL_Quit();
 
     // NUKLEAR NUKLEAR NUKLEAR
-    struct nk_context *ctx;
-    struct nk_colorf bg;
-    float font_scale = 1;
-
-    ctx = nk_sdl_init(window, renderer);
-    {
-        struct nk_font_atlas *atlas;
-        struct nk_font_config config = nk_font_config(0);
-        struct nk_font *font;
-
-        nk_sdl_font_stash_begin(&atlas);
-        font = nk_font_atlas_add_default(atlas, 13 * font_scale, &config);
-        nk_sdl_font_stash_end();
-
-        font->handle.height /= font_scale;
-        nk_style_set_font(ctx, &font->handle);
-    }
-
+    init_ui(window, renderer);
     // NUKLEAR NUKLEAR NUKLEAR
 
     SDL_Event e;
@@ -270,32 +244,7 @@ int WinMain(int argc, char *argv[])
         do_camera_move(player.x, player.y, keystate, dt);
 
         // GUI GUI GUI
-
-        /* GUI */
-        if (nk_begin(ctx, "Inventory", nk_rect(20, 20, 300, 200),
-                     NK_WINDOW_BORDER))
-        {
-            nk_layout_row_static(ctx, 30, 80, 1);
-            nk_label(ctx, "Inventory", NK_TEXT_LEFT);
-
-            nk_layout_row_dynamic(ctx, 0, 6);
-            for (auto x : player.inv.contents)
-            {
-
-                char count_p[64];
-                char buff[128];
-
-                sprintf(count_p, "%d", x.count);
-
-                strcpy(buff, TTypeStrings[x.item_id]);
-                strcat(buff, ", ");
-                strcat(buff, count_p);
-                nk_label(ctx, buff, NK_TEXT_CENTERED);
-            }
-        }
-        nk_end(ctx);
-
-        nk_sdl_render(NK_ANTI_ALIASING_ON);
+        render_inventory(player);
         // GUI GUI GUI
 
         // Draw

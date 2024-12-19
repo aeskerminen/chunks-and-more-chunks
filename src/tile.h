@@ -1,30 +1,41 @@
 #ifndef TILE
 #define TILE
 
-enum Collider {none=0, soft, hard};
-enum TType {air=0, grass, dirt, rock};
+#include <stdint.h>
 
-const char* const ColliderStrings[] = 
+enum Collider
 {
-    "none",
-    "soft",
-    "hard"
+    none = 0,
+    soft,
+    hard
+};
+enum TType
+{
+    air = 0,
+    grass,
+    dirt,
+    rock
 };
 
-const char* const TTypeStrings[] = 
-{
-    "air",
-    "grass",
-    "dirt",
-    "rock",
+const char *const ColliderStrings[] =
+    {
+        "none",
+        "soft",
+        "hard"};
+
+const char *const TTypeStrings[] =
+    {
+        "air",
+        "grass",
+        "dirt",
+        "rock",
 };
 
-typedef struct tile 
+typedef struct tile
 {
     TType type;
-    Uint32 color;
+    uint32_t color;
     Collider col;
 } tile;
-
 
 #endif

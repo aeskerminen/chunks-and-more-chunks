@@ -134,18 +134,12 @@ typedef struct floatingItem
     Uint32 color;
 } floatingItem;
 
-void onBlockDestroy()
-{
-}
-
 int WinMain(int argc, char *argv[])
 {
     if (!initialize())
         SDL_Quit();
 
-    // NUKLEAR NUKLEAR NUKLEAR
     init_ui(window, renderer);
-    // NUKLEAR NUKLEAR NUKLEAR
 
     SDL_Event e;
     bool quit = false;
@@ -191,8 +185,6 @@ int WinMain(int argc, char *argv[])
 
         dt = (double)((cur_frame - last_frame) * 1000 / (double)SDL_GetPerformanceFrequency());
 
-        // SDL_Log("%f\n", dt);
-
         const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 
         // RENDER CHUNKS
@@ -213,30 +205,6 @@ int WinMain(int argc, char *argv[])
         if (mouse_left_press)
         {
             tile *p = get_block_at_cursor(chunks);
-
-            /*
-            if(p->type == TType::air || player.handmode == HandMode::NONE)
-                continue;
-
-
-            item collected_item {p->type, false, 1};
-
-            bool found = false;
-            for(int i = 0; i < player.inv.contents.size(); i++)
-            {
-                if(player.inv.contents[i].item_id == p->type)
-                {
-                    player.inv.contents[i].count++;
-                    found = true;
-                    break;
-                }
-            }
-            if(!found)
-                player.inv.contents.push_back(collected_item);
-
-            *p = empty_tile;
-            */
-
             mouse_left_press = false;
         }
 
@@ -245,7 +213,6 @@ int WinMain(int argc, char *argv[])
 
         // GUI GUI GUI
         render_inventory(player);
-        // GUI GUI GUI
 
         // Draw
         SDL_RenderPresent(renderer);

@@ -14,7 +14,8 @@
 #include "globals.h"
 #include "item.h"
 #include "inventory.h"
-#include "camera.h" 
+#include "camera.h"
+#include "pointer.h" 
 
 #define NK_IMPLEMENTATION
 #define NK_INCLUDE_FIXED_TYPES
@@ -134,79 +135,6 @@ void do_render_chunks(const std::vector<chunk> &chunks, player player)
     SDL_RenderFillRect(renderer, &test);
 }
 
-
-tile *get_block_at_cursor(std::vector<chunk> &chunks)
-{
-    // Get mouse localtion in world coordinates
-    int mx, my;
-    SDL_GetMouseState(&mx, &my);
-
-    int mx_world = mx + camera.x;
-    int my_world = my + camera.y;
-
-    // Get block at world coordinates
-    int m_block_global_x = (mx_world / BLOCK_SIZE);
-    int m_block_global_y = (my_world / BLOCK_SIZE);
-
-    int m_block_local_x = m_block_global_x % CHUNK_SIZE;
-    int m_block_local_y = m_block_global_y % CHUNK_SIZE;
-
-    // Get chunk from global block position
-    int m_block_chunk_index_x = ceil(m_block_global_x / CHUNK_SIZE);
-    int m_block_chunk_index_y = ceil(m_block_global_y / CHUNK_SIZE);
-
-    // Get actual index
-    int m_block_chunk_index = WORLD_CHUNK_W * m_block_chunk_index_y + m_block_chunk_index_x;
-
-    // Reference to block
-    auto &block = chunks[m_block_chunk_index].arr[m_block_local_x][m_block_local_y];
-
-    // Remove block
-    SDL_Log("Type: %s, Color: %d, Collider: %s\n",
-            TTypeStrings[block.type], block.color, ColliderStrings[block.col]);
-
-    return &chunks[m_block_chunk_index].arr[m_block_local_x][m_block_local_y];
-}
-
-void do_show_mouse_helper(const std::vector<chunk> &chunks)
-{
-    // Get mouse localtion in world coordinates
-    int mx, my;
-    SDL_GetMouseState(&mx, &my);
-
-    int mx_world = mx + camera.x;
-    int my_world = my + camera.y;
-
-    // Get block at world coordinates
-    int m_block_global_x = (mx_world / BLOCK_SIZE);
-    int m_block_global_y = (my_world / BLOCK_SIZE);
-
-    int m_block_local_x = m_block_global_x % CHUNK_SIZE;
-    int m_block_local_y = m_block_global_y % CHUNK_SIZE;
-
-    // Get chunk from global block position
-    int m_block_chunk_index_x = ceil(m_block_global_x / CHUNK_SIZE);
-    int m_block_chunk_index_y = ceil(m_block_global_y / CHUNK_SIZE);
-
-    // Get actual index
-    int m_block_chunk_index = WORLD_CHUNK_W * m_block_chunk_index_y + m_block_chunk_index_x;
-
-    // Reference to block
-    auto &block = chunks[m_block_chunk_index].arr[m_block_local_x][m_block_local_y];
-
-    if (block.col != Collider::none)
-    {
-        SDL_FRect helper{
-            m_block_global_x * BLOCK_SIZE - camera.x,
-            m_block_global_y * BLOCK_SIZE - camera.y,
-            BLOCK_SIZE,
-            BLOCK_SIZE};
-
-        SDL_SetRenderDrawColor(renderer, 200, 100, 200, 100);
-        SDL_RenderDrawRectF(renderer, &helper);
-    }
-}
-
 typedef struct floatingItem
 {
     Item item;
@@ -305,7 +233,7 @@ int WinMain(int argc, char *argv[])
         do_player_move(player, keystate, dt);
 
         // MOUSE HELPER
-        do_show_mouse_helper(chunks);
+        do_show_mouse_helper(chunks, renderer);
 
         // GET BLOCK AT CURSOR (IF CLICKED)
         if (mouse_left_press)

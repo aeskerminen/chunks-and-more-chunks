@@ -14,6 +14,7 @@
 #include "globals.h"
 #include "item.h"
 #include "inventory.h"
+#include "camera.h" 
 
 #define NK_IMPLEMENTATION
 #define NK_INCLUDE_FIXED_TYPES
@@ -31,10 +32,6 @@
 SDL_Window *window = nullptr;
 SDL_Surface *surface = nullptr;
 SDL_Renderer *renderer = nullptr;
-
-SDL_FRect camera{4 * CHUNK_PIXEL_WIDTH, 4 * CHUNK_PIXEL_WIDTH, SCREEN_WIDTH, SCREEN_HEIGHT};
-float cam_vel_x = 0;
-float cam_vel_y = 0;
 
 bool initialize()
 {
@@ -137,38 +134,6 @@ void do_render_chunks(const std::vector<chunk> &chunks, player player)
     SDL_RenderFillRect(renderer, &test);
 }
 
-void do_camera_move(player player, const Uint8 *keystate, const float dt)
-{
-
-    const float cam_base_vel = 0.75f;
-
-    cam_vel_x = 0;
-    cam_vel_y = 0;
-
-    // CAMERA FREE-MOVE
-    if (keystate[SDL_SCANCODE_LEFT] == 1)
-        cam_vel_x = -cam_base_vel;
-    if (keystate[SDL_SCANCODE_RIGHT] == 1)
-        cam_vel_x = cam_base_vel;
-    if (keystate[SDL_SCANCODE_UP] == 1)
-        cam_vel_y = -cam_base_vel;
-    if (keystate[SDL_SCANCODE_DOWN] == 1)
-        cam_vel_y = cam_base_vel;
-
-    if (camera.x + cam_vel_x <= WORLD_CHUNK_W * CHUNK_SIZE * BLOCK_SIZE)
-    {
-        camera.x += cam_vel_x * dt;
-    }
-    if (camera.y + cam_vel_y <= WORLD_CHUNK_H * CHUNK_SIZE * BLOCK_SIZE - SCREEN_HEIGHT && camera.y + cam_vel_y >= 0)
-    {
-        camera.y += cam_vel_y * dt;
-    }
-
-    SDL_FRect player_rect{player.x - camera.x, player.y - camera.y, PLAYER_WIDTH, PLAYER_HEIGHT};
-
-    camera.x += (player.x - camera.x - SCREEN_WIDTH / 2) * dt * 0.005f;
-    camera.y += (player.y - camera.y - SCREEN_HEIGHT / 2) * dt * 0.005f;
-}
 
 tile *get_block_at_cursor(std::vector<chunk> &chunks)
 {
@@ -374,12 +339,12 @@ int WinMain(int argc, char *argv[])
         }
 
         // CAMERA
-        do_camera_move(player, keystate, dt);
+        do_camera_move(player.x, player.y, keystate, dt);
 
         // GUI GUI GUI
 
         /* GUI */
-        if (nk_begin(ctx, "Inventory", nk_rect(20, 20, 500, 300),
+        if (nk_begin(ctx, "Inventory", nk_rect(20, 20, 300, 200),
                      NK_WINDOW_BORDER))
         {
             nk_layout_row_static(ctx, 30, 80, 1);

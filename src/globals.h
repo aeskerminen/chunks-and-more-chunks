@@ -1,10 +1,10 @@
 #ifndef GLOBALS
 #define GLOBALS
 
-const int SCREEN_WIDTH = 1920;
-const int SCREEN_HEIGHT = 1200;
+const int SCREEN_WIDTH = 1280;
+const int SCREEN_HEIGHT = 720;
 
-const float GRAVITY = 0.11;
+const float GRAVITY = 9.81;
 
 const int BLOCK_SIZE = 35;
 const int CHUNK_SIZE = 16;

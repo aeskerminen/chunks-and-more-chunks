@@ -48,7 +48,7 @@ bool initialize()
 
     IMG_Init(IMG_INIT_JPG);
 
-    window = SDL_CreateWindow("Terraria", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH,
+    window = SDL_CreateWindow("Terraria", SDL_WINDOW_SHOWN, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH,
                               SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 
     if (window == nullptr)

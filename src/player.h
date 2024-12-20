@@ -3,11 +3,13 @@
 
 #include <SDL2/SDL.h>
 #include <vector>
+#include <algorithm>
 
 #include "globals.h"
 #include "tile.h"
 #include "chunk.h"
 #include "inventory.h"
+
 
 enum HandMode {PLACE=0, ATTACK, NONE};
 

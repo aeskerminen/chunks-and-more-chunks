@@ -1,3 +1,4 @@
+
 #include "player.h"
 #include <cmath>
 
@@ -60,6 +61,78 @@ void do_player_collision(player &player, const std::vector<chunk> &chunks, const
                 col_b = true;
 
             // SDL_RenderDrawRectF(renderer, &collider);
+        }
+
+        // TOP
+        for (int k = 0; k < PLAYER_W_MULT * 2; k++)
+        {
+            int actual_loc = k - 1;
+
+            SDL_Point globalCoord{PHeadBlock.x + actual_loc, PHeadBlock.y - 1};
+            SDL_Point chunkCoord = CIndexFromBlock(globalCoord.x, globalCoord.y);
+
+            int actualChunk = WORLD_CHUNK_W * chunkCoord.y + chunkCoord.x;
+            SDL_Point localCoord = GetLocalBlockPoint(globalCoord.x, globalCoord.y);
+
+            SDL_FRect collider{
+                globalCoord.x * BLOCK_SIZE - camera.x,
+                globalCoord.y * BLOCK_SIZE - camera.y,
+                BLOCK_SIZE,
+                BLOCK_SIZE * 1.025f};
+
+            if (SDL_HasIntersectionF(&collider, &player_col) &&
+                chunks[actualChunk].arr[localCoord.x][localCoord.y].col == Collider::hard)
+                col_t = true;
+
+            //  SDL_RenderDrawRectF(renderer, &collider);
+        }
+    }
+
+    // LEFT & RIGHT COLLISION
+    {
+
+        // LEFT
+        for (int k = 0; k < PLAYER_H_MULT; k++)
+        {
+            SDL_Point globalCoord{PHeadBlock.x - 1, PHeadBlock.y + k};
+            SDL_Point chunkCoord = CIndexFromBlock(globalCoord.x, globalCoord.y);
+
+            int actualChunk = WORLD_CHUNK_W * chunkCoord.y + chunkCoord.x;
+            SDL_Point localCoord = GetLocalBlockPoint(globalCoord.x, globalCoord.y);
+
+            SDL_FRect collider{
+                globalCoord.x * BLOCK_SIZE - camera.x,
+                globalCoord.y * BLOCK_SIZE - camera.y,
+                BLOCK_SIZE * 1.025f,
+                BLOCK_SIZE};
+
+            if (SDL_HasIntersectionF(&collider, &player_col) &&
+                chunks[actualChunk].arr[localCoord.x][localCoord.y].col == Collider::hard)
+                col_l = true;
+
+            //  SDL_RenderDrawRectF(renderer, &collider);
+        }
+
+        // RIGHT
+        for (int k = 0; k < PLAYER_H_MULT; k++)
+        {
+            SDL_Point globalCoord{PHeadBlock.x + PLAYER_W_MULT, PHeadBlock.y + k};
+            SDL_Point chunkCoord = CIndexFromBlock(globalCoord.x, globalCoord.y);
+
+            int actualChunk = WORLD_CHUNK_W * chunkCoord.y + chunkCoord.x;
+            SDL_Point localCoord = GetLocalBlockPoint(globalCoord.x, globalCoord.y);
+
+            SDL_FRect collider{
+                globalCoord.x * BLOCK_SIZE - camera.x,
+                globalCoord.y * BLOCK_SIZE - camera.y,
+                BLOCK_SIZE * 1.025f,
+                BLOCK_SIZE};
+
+            if (SDL_HasIntersectionF(&collider, &player_col) &&
+                chunks[actualChunk].arr[localCoord.x][localCoord.y].col == Collider::hard)
+                col_r = true;
+
+            ////  SDL_RenderDrawRectF(renderer, &collider);
         }
     }
 }

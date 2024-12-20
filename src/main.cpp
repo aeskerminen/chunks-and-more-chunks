@@ -247,15 +247,19 @@ int WinMain(int argc, char *argv[])
 
         do_player_collision(player, chunks, camera);
 
+        bool col_l = player.coll[0];
         bool col_b = player.coll[1];
-
-        SDL_Log("%d", col_b);
+        bool col_r = player.coll[2];
+        bool col_t = player.coll[3];
 
         // PLAYER MOVEMENT
         speedX += ((right * runSpeed) - (left * runSpeed)) * dt;
         speedX *= friction;
 
-        player.x += std::clamp(speedX, -speedMX, speedMX);
+        if ((speedX < 0 && !col_l) || (speedX > 0 && !col_r))
+        {
+            player.x += std::clamp(speedX, -speedMX, speedMX);
+        }
 
         speedY -= ((grounded * up * jumpForce) - GRAVITY) * dt; // Gravity increases speedY downward.
 

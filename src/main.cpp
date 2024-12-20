@@ -4,7 +4,6 @@
 #include <vector>
 #include <string>
 #include <iostream>
-
 #include <stdlib.h>
 
 #define NK_IMPLEMENTATION
@@ -31,7 +30,7 @@ bool initialize()
 
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
     {
-        printf("SDL could not intiailize! SDL_Error: %s\n", SDL_GetError());
+        printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
         success = false;
     }
 
@@ -148,6 +147,7 @@ int WinMain(int argc, char *argv[])
 
     std::vector<chunk> chunks = generate_world(WORLD_CHUNK_W, WORLD_CHUNK_H);
     std::vector<floatingItem> floatingItems;
+
     player player{
         4 * CHUNK_PIXEL_WIDTH - 8 * BLOCK_SIZE,
         4 * CHUNK_PIXEL_WIDTH - 22 * BLOCK_SIZE,
@@ -159,6 +159,8 @@ int WinMain(int argc, char *argv[])
 
     tile empty_tile{TType::air, 0, Collider::none};
 
+    const float GROUND_LEVEL = player.y - PLAYER_HEIGHT - 10; // Set ground level just below spawn.
+
     Uint64 cur_frame = SDL_GetPerformanceCounter();
     Uint64 last_frame = 0;
 
@@ -168,12 +170,12 @@ int WinMain(int argc, char *argv[])
     float speedX = 0.0f;
 
     float speedMX = 4.0f;
-    float speedMY = 70.0f;
+    float speedMY = 7.0f;
 
     float friction = 0.95f;
-    float runSpeed = 0.05f;
+    float runSpeed = 0.225f;
 
-    float jumpForce = 100.0f;
+    float jumpForce = 25.0f;
 
     int right = 0, left = 0;
 
@@ -243,44 +245,36 @@ int WinMain(int argc, char *argv[])
         // RENDER CHUNKS
         do_render_chunks(chunks, player);
 
-        // Handle floating items
+        do_player_collision(player, chunks, camera);
+
+        bool col_b = player.coll[1];
+
+        SDL_Log("%d", col_b);
 
         // PLAYER MOVEMENT
-
-        speedX += ((right * runSpeed) - (left * runSpeed));
+        speedX += ((right * runSpeed) - (left * runSpeed)) * dt;
         speedX *= friction;
 
         player.x += std::clamp(speedX, -speedMX, speedMX);
 
-        speedY -= (grounded * up * jumpForce) - GRAVITY;
-
-        if (up)
-        {
-            SDL_Log("%s%f", "JUMP: ", speedY);
-        } else {
-            SDL_Log("%s%f", "STAY: ", speedY);
-        }
-
-        if (speedY > speedMY)
-        {
-            speedY = speedMY;
-        }
+        speedY -= ((grounded * up * jumpForce) - GRAVITY) * dt; // Gravity increases speedY downward.
 
         float before = player.y;
-        player.y += speedY;
+        player.y += std::clamp(speedY, -speedMY, speedMY);
 
-        if (player.y >= -10)
+        if (col_b && speedY > 0)
         {
             speedY = 0;
-            grounded = 1;
             player.y = before;
+            grounded = 1;
         }
         else
         {
             grounded = 0;
         }
 
-        // MOUSE HELPER
+        // MOUSE
+
         do_show_mouse_helper(chunks, renderer);
 
         // GET BLOCK AT CURSOR (IF CLICKED)

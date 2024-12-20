@@ -4,7 +4,7 @@
 const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 720;
 
-const float GRAVITY = 1.2f;
+const float GRAVITY = 0.4f;
 
 const int BLOCK_SIZE = 35;
 const int CHUNK_SIZE = 16;

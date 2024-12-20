@@ -10,18 +10,24 @@
 #include "chunk.h"
 #include "inventory.h"
 
+enum HandMode
+{
+    PLACE = 0,
+    ATTACK,
+    NONE
+};
 
-enum HandMode {PLACE=0, ATTACK, NONE};
-
-typedef struct player 
+typedef struct player
 {
     float x, y;
     float velx, vely;
     bool jump;
     bool coll[4];
     inventory inv;
-    item* curItem;
+    item *curItem;
     HandMode handmode;
 } player;
+
+void do_player_collision(player &player, const std::vector<chunk> &chunks, const SDL_FRect &camera);
 
 #endif

@@ -261,7 +261,7 @@ int WinMain(int argc, char *argv[])
             player.x += std::clamp(speedX, -speedMX, speedMX);
         }
 
-        speedY -= ((grounded * up * jumpForce) - GRAVITY) * dt; // Gravity increases speedY downward.
+        speedY -= (((col_t ? 0 : 1) * grounded * up * jumpForce) - GRAVITY) * dt; // Gravity increases speedY downward.
 
         float before = player.y;
         player.y += std::clamp(speedY, -speedMY, speedMY);
@@ -275,6 +275,12 @@ int WinMain(int argc, char *argv[])
         else
         {
             grounded = 0;
+        }
+
+        if (col_t && speedY < 0)
+        {
+            speedY = 0;
+            player.y = before;
         }
 
         // MOUSE

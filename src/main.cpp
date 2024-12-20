@@ -164,6 +164,23 @@ int WinMain(int argc, char *argv[])
 
     double dt = 0;
 
+    float speedY = 0.0f;
+    float speedX = 0.0f;
+
+    float speedMX = 4.0f;
+    float speedMY = 70.0f;
+
+    float friction = 0.95f;
+    float runSpeed = 0.05f;
+
+    float jumpForce = 100.0f;
+
+    int right = 0, left = 0;
+
+    int grounded = 0;
+
+    int up = 0;
+
     while (!quit)
     {
         bool mouse_left_press = false;
@@ -176,6 +193,42 @@ int WinMain(int argc, char *argv[])
             if (e.type == SDL_MOUSEBUTTONDOWN)
                 mouse_left_press = true;
 
+            switch (e.type)
+            {
+            case SDL_KEYDOWN:
+            {
+                switch (e.key.keysym.sym)
+                {
+                case SDLK_a:
+                    left = 1;
+                    break;
+                case SDLK_d:
+                    right = 1;
+                    break;
+                case SDLK_SPACE:
+                    up = 1;
+                    break;
+                }
+                break;
+            }
+            case SDL_KEYUP:
+            {
+                switch (e.key.keysym.sym)
+                {
+                case SDLK_a:
+                    left = 0;
+                    break;
+                case SDLK_d:
+                    right = 0;
+                    break;
+                case SDLK_SPACE:
+                    up = 0;
+                    break;
+                }
+                break;
+            }
+            }
+
             nk_sdl_handle_event(&e);
         }
         nk_input_end(ctx);
@@ -183,7 +236,7 @@ int WinMain(int argc, char *argv[])
         last_frame = cur_frame;
         cur_frame = SDL_GetPerformanceCounter();
 
-        dt = (double)((cur_frame - last_frame) * 1000 / (double)SDL_GetPerformanceFrequency());
+        dt = 1 / ((double)((cur_frame - last_frame) * 1000 / (double)SDL_GetPerformanceFrequency()));
 
         const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 
@@ -192,11 +245,40 @@ int WinMain(int argc, char *argv[])
 
         // Handle floating items
 
-        // PLAYER COLLISION
-        do_player_collision(player, chunks, camera);
+        // PLAYER MOVEMENT
 
-        // PLAYER
-        do_player_move(player, keystate, dt);
+        speedX += ((right * runSpeed) - (left * runSpeed));
+        speedX *= friction;
+
+        player.x += std::clamp(speedX, -speedMX, speedMX);
+
+        speedY -= (grounded * up * jumpForce) - GRAVITY;
+
+        if (up)
+        {
+            SDL_Log("%s%f", "JUMP: ", speedY);
+        } else {
+            SDL_Log("%s%f", "STAY: ", speedY);
+        }
+
+        if (speedY > speedMY)
+        {
+            speedY = speedMY;
+        }
+
+        float before = player.y;
+        player.y += speedY;
+
+        if (player.y >= -10)
+        {
+            speedY = 0;
+            grounded = 1;
+            player.y = before;
+        }
+        else
+        {
+            grounded = 0;
+        }
 
         // MOUSE HELPER
         do_show_mouse_helper(chunks, renderer);

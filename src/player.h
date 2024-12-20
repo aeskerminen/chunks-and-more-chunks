@@ -24,7 +24,4 @@ typedef struct player
     HandMode handmode;
 } player;
 
-void do_player_collision(player& player, const std::vector<chunk>& chunks, const SDL_FRect& camera);
-void do_player_move(player& player, const Uint8* keystate, const float dt);
-
 #endif

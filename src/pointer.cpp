@@ -49,7 +49,7 @@ tile *get_block_at_cursor(std::vector<chunk> &chunks)
     std::pair<int, int> m_block_local_indices = get_block_local_indices();
 
     int m_block_local_x = std::get<0>(m_block_local_indices);
-    int m_block_local_y = std::get<0>(m_block_local_indices);
+    int m_block_local_y = std::get<1>(m_block_local_indices);
 
     // Reference to block
     auto &block = chunks[m_block_chunk_index].arr[m_block_local_x][m_block_local_y];

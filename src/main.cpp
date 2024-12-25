@@ -82,10 +82,7 @@ void do_render_chunks(const std::vector<chunk> &chunks, player player)
                 {
                     Uint32 pixel = chunks[k].arr[i][j].color;
                     Uint8 r, g, b, a;
-                    r = 0;
-                    g = 0;
-                    b = 0;
-                    a = 0;
+                    r = g = b = a = 0;
 
                     SDL_GetRGBA(pixel, pixel_format, &r, &g, &b, &a);
 

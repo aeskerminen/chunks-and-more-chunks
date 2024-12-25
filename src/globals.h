@@ -18,7 +18,9 @@ constexpr int WOLRD_RES = WORLD_CHUNK_W * WORLD_CHUNK_H * CHUNK_PIXEL_WIDTH * CH
 const int PLAYER_W_MULT = 2;
 const int PLAYER_H_MULT = 3;
 
-constexpr int PLAYER_WIDTH = BLOCK_SIZE*PLAYER_W_MULT;
-constexpr int PLAYER_HEIGHT = BLOCK_SIZE*PLAYER_H_MULT;
+constexpr int PLAYER_WIDTH = BLOCK_SIZE * PLAYER_W_MULT;
+constexpr int PLAYER_HEIGHT = BLOCK_SIZE * PLAYER_H_MULT;
+
+constexpr int ITEM_SIZE = BLOCK_SIZE;
 
 #endif

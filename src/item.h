@@ -1,12 +1,14 @@
 #ifndef ITEM
 #define ITEM
 
-typedef struct Item 
+typedef struct Item
 {
-    Uint8 item_id;
+    int item_id;
+
+    float x, y;
 
     bool stackable;
-    Uint8 count;
+    int count;
 } item;
 
 #endif

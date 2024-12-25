@@ -19,6 +19,7 @@
 #include "camera.h"
 #include "pointer.h"
 #include "ui.h"
+#include "util.h"
 
 SDL_Window *window = nullptr;
 SDL_Surface *surface = nullptr;
@@ -122,13 +123,116 @@ void do_render_chunks(const std::vector<chunk> &chunks, player player)
     SDL_RenderFillRect(renderer, &test);
 }
 
-typedef struct floatingItem
+void do_render_items(const std::vector<item> &items)
 {
-    Item item;
-    SDL_FRect rect;
-    Uint16 chunkIndex;
-    Uint32 color;
-} floatingItem;
+    SDL_SetRenderDrawColor(renderer, 100, 100, 100, 100);
+    for (const item i : items)
+    {
+        SDL_Rect item_rect = SDL_Rect{i.x - camera.x, i.y - camera.y, ITEM_SIZE, ITEM_SIZE};
+        SDL_RenderFillRect(renderer, &item_rect);
+    }
+}
+
+bool check_collision(SDL_Rect a, SDL_Rect b)
+{
+    // The sides of the rectangles
+    int leftA, leftB;
+    int rightA, rightB;
+    int topA, topB;
+    int bottomA, bottomB;
+
+    // Calculate the sides of rect A
+    leftA = a.x;
+    rightA = a.x + a.w;
+    topA = a.y;
+    bottomA = a.y + a.h;
+
+    // Calculate the sides of rect B
+    leftB = b.x;
+    rightB = b.x + b.w;
+    topB = b.y;
+    bottomB = b.y + b.h;
+
+    if (bottomA <= topB)
+    {
+        return false;
+    }
+
+    if (topA >= bottomB)
+    {
+        return false;
+    }
+
+    if (rightA <= leftB)
+    {
+        return false;
+    }
+
+    if (leftA >= rightB)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool check_item_collision(const item &item, const std::vector<chunk> &chunks)
+{
+    const int x = item.x, y = item.y;
+
+    SDL_Rect item_rect{x - camera.x, y - camera.y, BLOCK_SIZE, BLOCK_SIZE};
+
+    auto CIndexFromBlock = [](int bx, int by)
+    {
+        SDL_Point point;
+        point.x = ceil(bx / CHUNK_SIZE);
+        point.y = ceil(by / CHUNK_SIZE);
+
+        return point;
+    };
+
+    auto GetLocalBlockPoint = [](int bx, int by)
+    {
+        SDL_Point point;
+        point.x = floor(bx % CHUNK_SIZE);
+        point.y = floor(by % CHUNK_SIZE);
+
+        return point;
+    };
+
+    {
+        // Get block at world coordinates
+        int m_block_global_x = (x / BLOCK_SIZE);
+        int m_block_global_y = ((y + BLOCK_SIZE) / BLOCK_SIZE);
+
+        SDL_Point chunkCoord = CIndexFromBlock(m_block_global_x, m_block_global_y);
+
+        int actualChunk = WORLD_CHUNK_W * chunkCoord.y + chunkCoord.x;
+        SDL_Point localCoord = GetLocalBlockPoint(m_block_global_x, m_block_global_y);
+
+        SDL_Rect test_bottom_m{m_block_global_x * BLOCK_SIZE - camera.x, m_block_global_y * BLOCK_SIZE - camera.y, BLOCK_SIZE, BLOCK_SIZE};
+
+        SDL_RenderDrawRect(renderer, &test_bottom_m);
+
+        bool bottom_m_collideable = chunks[actualChunk].arr[localCoord.x][localCoord.y].col == Collider::hard;
+
+        bool collided = (check_collision(item_rect, test_bottom_m) && bottom_m_collideable);
+
+        return collided;
+    }
+}
+
+void do_tick_items(std::vector<item> &items, const std::vector<chunk> &chunks, double dt)
+{
+    for (item &i : items)
+    {
+        SDL_Rect item_rect = SDL_Rect{i.x - camera.x, i.y - camera.y, ITEM_SIZE, ITEM_SIZE};
+        if (!check_item_collision(i, chunks))
+        {
+            i.y += GRAVITY * 0.5f * dt;
+        }
+    }
+}
 
 int WinMain(int argc, char *argv[])
 {
@@ -143,7 +247,8 @@ int WinMain(int argc, char *argv[])
     Uint32 lastFrame = SDL_GetTicks();
 
     std::vector<chunk> chunks = generate_world(WORLD_CHUNK_W, WORLD_CHUNK_H);
-    std::vector<floatingItem> floatingItems;
+
+    std::vector<item> items;
 
     player player{
         4 * CHUNK_PIXEL_WIDTH - 8 * BLOCK_SIZE,
@@ -153,6 +258,10 @@ int WinMain(int argc, char *argv[])
         false,
         {0, 0, 0}};
     player.inv.max_size = 40;
+
+    const item test_item{1, player.x, player.y, false, 1};
+
+    items.push_back(test_item);
 
     tile empty_tile{TType::air, 0, Collider::none};
 
@@ -242,6 +351,12 @@ int WinMain(int argc, char *argv[])
         // RENDER CHUNKS
         do_render_chunks(chunks, player);
 
+        // RENDER ITEMS
+        do_render_items(items);
+
+        // ITEM LOGIC
+        do_tick_items(items, chunks, dt);
+
         do_player_collision(player, chunks, camera);
 
         bool col_l = player.coll[0];
@@ -281,7 +396,6 @@ int WinMain(int argc, char *argv[])
         }
 
         // MOUSE
-
         do_show_mouse_helper(chunks, renderer);
 
         // GET BLOCK AT CURSOR (IF CLICKED)

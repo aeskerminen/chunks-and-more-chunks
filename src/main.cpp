@@ -55,9 +55,6 @@ void do_render_chunks(const std::vector<chunk> &chunks, player player)
 {
     SDL_PixelFormat *pixel_format = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888);
 
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
-
     SDL_Color colors[3] =
         {
             {86, 125, 70, 255},
@@ -97,21 +94,19 @@ void do_render_chunks(const std::vector<chunk> &chunks, player player)
                             SDL_SetRenderDrawColor(renderer, colors[1].r, colors[1].g, colors[1].b, a);
                         else
                             SDL_SetRenderDrawColor(renderer, colors[2].r, colors[2].g, colors[2].b, a);
+
+                        SDL_Rect rect{
+                            (i * BLOCK_SIZE + chunks[k].x_off_w) - camera.x,
+                            (j * BLOCK_SIZE + chunks[k].y_off_w) - camera.y,
+                            BLOCK_SIZE,
+                            BLOCK_SIZE};
+
+                        SDL_RenderFillRect(renderer, &rect);
+
+                        // DEBUG
+                        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+                        SDL_RenderDrawRect(renderer, &rect);
                     }
-                    else
-                        SDL_SetRenderDrawColor(renderer, 0, 0, 0, a);
-
-                    SDL_Rect rect{
-                        (i * BLOCK_SIZE + chunks[k].x_off_w) - camera.x,
-                        (j * BLOCK_SIZE + chunks[k].y_off_w) - camera.y,
-                        BLOCK_SIZE,
-                        BLOCK_SIZE};
-
-                    SDL_RenderFillRect(renderer, &rect);
-
-                    // DEBUG
-                    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-                    SDL_RenderDrawRect(renderer, &rect);
                 }
             }
         }
@@ -174,13 +169,13 @@ int WinMain(int argc, char *argv[])
     float speedY = 0.0f;
     float speedX = 0.0f;
 
-    float speedMX = 4.0f;
-    float speedMY = 7.0f;
+    float speedMX = 0.6f;
+    float speedMY = 1.9f;
 
     float friction = 0.95f;
     float runSpeed = 0.225f;
 
-    float jumpForce = 25.0f;
+    float jumpForce = 6.0f;
 
     int right = 0, left = 0;
 
@@ -232,7 +227,7 @@ int WinMain(int argc, char *argv[])
                     up = 0;
                     break;
                 }
-                break;
+                break;  
             }
             }
 
@@ -243,9 +238,13 @@ int WinMain(int argc, char *argv[])
         last_frame = cur_frame;
         cur_frame = SDL_GetPerformanceCounter();
 
-        dt = 1 / ((double)((cur_frame - last_frame) * 1000 / (double)SDL_GetPerformanceFrequency()));
+        dt = 1;//1 / ((double)((cur_frame - last_frame) * 1000 / (double)SDL_GetPerformanceFrequency()));
 
         const Uint8 *keystate = SDL_GetKeyboardState(NULL);
+
+        // CLEAR
+        SDL_SetRenderDrawColor(renderer, 180, 235, 240, 255);
+        SDL_RenderClear(renderer);
 
         // RENDER CHUNKS
         do_render_chunks(chunks, player);

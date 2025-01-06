@@ -5,8 +5,8 @@
 
 ## Goals
 
-- [] Terrain generation
-- [] Player system
-- [] Inventory system
-- [] Destructible and minable terrain
-- [] Enemy system
+- [ ] Terrain generation
+- [ ] Player system
+- [ ] Inventory system
+- [ ] Destructible and minable terrain
+- [ ] Enemy system
